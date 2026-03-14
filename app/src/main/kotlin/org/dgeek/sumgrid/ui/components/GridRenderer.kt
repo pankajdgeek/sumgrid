@@ -1,5 +1,7 @@
 package org.dgeek.sumgrid.ui.components
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
@@ -130,6 +133,14 @@ fun GridRenderer(
     val colors = gridColorsFromTheme()
     val n = state.puzzle.size
 
+    // Animate selection scale: spring pulse 1.0 -> 1.05 -> 1.0 over ~200ms
+    val hasSelection = state.selectedCell != null
+    val selectionScale by animateFloatAsState(
+        targetValue = if (hasSelection) 1.05f else 1.0f,
+        animationSpec = spring(dampingRatio = 0.4f, stiffness = 800f),
+        label = "selectionScale"
+    )
+
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
@@ -167,7 +178,8 @@ fun GridRenderer(
                 n = n,
                 cellSize = cellSize,
                 textMeasurer = textMeasurer,
-                colors = colors
+                colors = colors,
+                selectionScale = selectionScale
             )
         }
 
@@ -201,7 +213,8 @@ private fun DrawScope.drawGrid(
     n: Int,
     cellSize: Float,
     textMeasurer: TextMeasurer,
-    colors: GridColors
+    colors: GridColors,
+    selectionScale: Float = 1f
 ) {
     // ── Cell backgrounds ────────────────────────────────────────────────────
     for (r in 0 until n) {
@@ -218,12 +231,14 @@ private fun DrawScope.drawGrid(
                 size    = Size(cellSize, cellSize)
             )
 
-            // Selected cell — amber border overlay
+            // Selected cell — amber border overlay with spring pulse
             if (isSelected) {
+                val scaledSize = cellSize * selectionScale
+                val offset = (scaledSize - cellSize) / 2f
                 drawRect(
                     color = colors.selectedBorder,
-                    topLeft = Offset(c * cellSize, r * cellSize),
-                    size    = Size(cellSize, cellSize),
+                    topLeft = Offset(c * cellSize - offset, r * cellSize - offset),
+                    size    = Size(scaledSize, scaledSize),
                     style   = Stroke(width = 4f)
                 )
             }
