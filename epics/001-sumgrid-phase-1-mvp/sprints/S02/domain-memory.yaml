@@ -1,0 +1,335 @@
+# Domain Memory v1.0 — Sprint S02
+# SumGrid Phase 1 MVP — Sprint 2: Daily Puzzle Loop
+# Location: epics/001-sumgrid-phase-1-mvp/sprints/S02/domain-memory.yaml
+#
+# CRITICAL: This file lives ON DISK, not in agent context.
+# Workers read this file, pick ONE feature, implement it, update status, and EXIT.
+# Tests are the SOURCE OF TRUTH for feature status.
+#
+# DEPENDENCY: Sprint S01 must be fully passing before any S02 work begins.
+
+version: "1.0"
+created: "2026-03-14T00:00:00Z"
+last_updated: "2026-03-14T00:00:00Z"
+
+goal:
+  original_prompt: "SumGrid Phase 1 MVP - Sprint S02: Daily Puzzle Loop"
+  expanded_description: |
+    Sprint S02 wires up the complete daily player loop on top of the S01 engine.
+    After S02, a player can: open the app, see today's puzzle, solve it, watch
+    the celebration animation, see their time, share a spoiler-free grid card
+    via Android sharing Intent, and see their streak updated. The home screen
+    shows the current streak, today's completion status, and a countdown to the
+    next puzzle.
+
+    Key design decisions:
+    - Date seed = LocalDate.now(ZoneId.systemDefault()).toEpochDay() cast to Long
+    - Difficulty seed offset: Beginner uses seed, Easy uses seed+1, Medium uses seed+2
+    - Background precompute: WorkManager job generates today's and tomorrow's puzzles
+      on app start and after midnight so the first tap is never slow
+    - Streak persistence: DataStore<Preferences>, not SharedPreferences
+    - Share card: Unicode emoji colored grid (gray square = given cell, green square =
+      correctly placed by user), no numbers, no spoilers
+    - Timer: starts when first cell is tapped, stops on completion, hidden during play
+
+  success_criteria:
+    - "DailyPuzzleRepository returns the same puzzle for a given date+difficulty on any device"
+    - "Puzzle resets at midnight local time (new puzzle available on new calendar day)"
+    - "Background precompute fires on app start if today's puzzle not yet cached"
+    - "Completion detection triggers when all cells are filled and all sums match targets"
+    - "Celebration animation plays on completion (cascade of green cells)"
+    - "Animation is skippable and runs correctly on low-end devices (no dropped frames at 30fps)"
+    - "Timer starts on first user cell tap; stops on completion; displays MM:SS on completion card"
+    - "Difficulty selector shows Beginner / Easy / Medium with correct labels on home screen"
+    - "Share card text matches expected format: 'SumGrid #N — Difficulty TIME\\n[grid]\\nPlay free -> sumgrid.dgeek.org'"
+    - "Share Intent opens Android native share sheet with pre-populated share card text"
+    - "Streak increments by 1 when a daily puzzle is completed for the first time that day"
+    - "Streak resets to 0 if no daily puzzle is completed for a full calendar day"
+    - "Streak persists across app restarts (DataStore backed)"
+    - "Milestone badges display at streaks 7, 30, 100, 365"
+    - "Home screen shows: today's puzzle status, active streak count, countdown to midnight"
+
+  constraints:
+    - "Requires S01 to be fully passing before implementation starts"
+    - "Use LocalDate and ZoneId for all date calculations — no System.currentTimeMillis() for date logic"
+    - "DataStore<Preferences> for streak and puzzle completion state — NOT SharedPreferences"
+    - "Background precompute must use WorkManager (not foreground service, not coroutine on main)"
+    - "Celebration animation must use Compose animation APIs only — no Lottie, no GIF"
+    - "Share card must be plain Unicode text (no image generation in MVP)"
+    - "Share card must NOT reveal any numbers — only emoji squares"
+
+features:
+  - id: "S02-F001"
+    name: "Daily puzzle system (date seed, midnight local reset, timezone-aware)"
+    description: |
+      Implement DailyPuzzleRepository. Given a date (LocalDate) and difficulty, returns
+      a deterministic Puzzle by seeding xorshift128 with the epoch day of the date
+      (plus a difficulty offset: 0 for Beginner, 1 for Easy, 2 for Medium).
+      Exposes today() and tomorrow() methods. Handles timezone correctly using
+      ZoneId.systemDefault() — "today" is based on the device's local clock.
+      Persists today's completed state in DataStore so app restarts don't reset.
+    status: "untested"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/daily/DailyPuzzleRepositoryTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/daily/DailyPuzzleRepository.kt"
+    priority: 21
+    dependencies: ["S01-F001", "S01-F002"]
+    domain: "backend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S02-F002"
+    name: "Background precompute of today's and tomorrow's puzzle"
+    description: |
+      Implement a WorkManager OneTimeWorkRequest that runs on app start (if today's
+      puzzle is not yet cached). Pre-generates today's puzzle for all three difficulties
+      and tomorrow's puzzles, stores them in DataStore. This ensures the first puzzle
+      load is instant even on slow devices. Worker is idempotent — safe to re-run.
+    status: "untested"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/daily/PuzzlePrecomputeWorkerTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/daily/PuzzlePrecomputeWorker.kt"
+    priority: 22
+    dependencies: ["S02-F001"]
+    domain: "backend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S02-F003"
+    name: "Puzzle completion detection"
+    description: |
+      In PuzzleViewModel, detect when the puzzle is complete: all empty cells have
+      been filled AND every row sum equals its target AND every column sum equals
+      its target. Exposes isComplete: StateFlow<Boolean>. On transition from false
+      to true, records the completion timestamp and elapsed time in DataStore.
+      Prevents re-triggering if the player somehow modifies a complete puzzle.
+    status: "untested"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/viewmodel/CompletionDetectionTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/viewmodel/PuzzleViewModel.kt"
+    priority: 23
+    dependencies: ["S01-F009"]
+    domain: "backend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S02-F004"
+    name: "Celebration animation (cascade effect, low-end device safe)"
+    description: |
+      On puzzle completion, play a cell-by-cell cascade animation where each cell
+      briefly scales up and turns a brighter green. Animate cells in reading order
+      (row 0 left-to-right, then row 1, etc.) with a 50ms stagger between cells.
+      Total animation: < 1.5 seconds. Implemented with Compose animateFloatAsState
+      or updateTransition — no Lottie, no external animation library. Must maintain
+      >= 30fps on a device with 2GB RAM. Animation is interruptible (player can tap
+      the share button without waiting for it to finish).
+    status: "untested"
+    test_file: "app/src/androidTest/kotlin/org/dgeek/sumgrid/ui/CelebrationAnimationTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/CelebrationAnimation.kt"
+    priority: 31
+    dependencies: ["S02-F003", "S01-F006"]
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S02-F005"
+    name: "Elapsed timer (hidden during play, shown on completion)"
+    description: |
+      Implement a puzzle timer. Timer starts when the player taps their first cell.
+      Timer is hidden while the puzzle is in progress (no on-screen display to avoid
+      anxiety). Timer stops when completion is detected. Displays as MM:SS on the
+      completion card. Timer value is persisted so app background/foreground doesn't
+      reset it. If the player abandons and returns, timer resumes from where it stopped.
+    status: "untested"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/viewmodel/PuzzleTimerTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/viewmodel/PuzzleViewModel.kt"
+    priority: 24
+    dependencies: ["S02-F003"]
+    domain: "backend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S02-F006"
+    name: "Difficulty selector UI (Beginner / Easy / Medium on home screen)"
+    description: |
+      Implement a difficulty selector on the home screen. Shows three options:
+      Beginner (3x3), Easy (4x4), Medium (5x5). Each shows today's completion
+      status (completed checkmark, or "Play" CTA). Selected difficulty persists
+      via DataStore so the app remembers the player's last choice. Tapping a
+      difficulty that is already completed today shows the completion card instead
+      of relaunching the puzzle.
+    status: "untested"
+    test_file: "app/src/androidTest/kotlin/org/dgeek/sumgrid/ui/DifficultySelectorTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/DifficultySelector.kt"
+    priority: 41
+    dependencies: ["S02-F001"]
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S02-F007"
+    name: "Share card generation (Unicode colored grid, no number spoilers)"
+    description: |
+      Implement ShareCardGenerator. Produces a plain-text string in the format:
+        SumGrid #[dayNumber] — [Difficulty] [timer emoji][MM:SS]\n
+        [NxN grid of Unicode emoji squares]\n
+        Play free -> sumgrid.dgeek.org
+      Cell encoding: given cells = gray square (U+2B1C), user-solved cells = green
+      square (U+1F7E9). No numbers in the share card. Day number = epoch day from
+      Jan 1 2026 (day 1). Grid rows separated by newlines.
+    status: "untested"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/share/ShareCardGeneratorTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/share/ShareCardGenerator.kt"
+    priority: 25
+    dependencies: ["S02-F003"]
+    domain: "backend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S02-F008"
+    name: "One-tap share via Android Intent"
+    description: |
+      Wire up the Share button on the completion card. On tap, creates an Android
+      ACTION_SEND Intent with type "text/plain" and the share card text from
+      ShareCardGenerator. Launches the Android native share sheet. Share button
+      is available on the completion card immediately after puzzle completion.
+      Also available on the home screen for a previously completed puzzle.
+    status: "untested"
+    test_file: "app/src/androidTest/kotlin/org/dgeek/sumgrid/ui/ShareIntentTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/CompletionCard.kt"
+    priority: 42
+    dependencies: ["S02-F007", "S02-F004"]
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S02-F009"
+    name: "Streak counter (consecutive days, DataStore backed)"
+    description: |
+      Implement StreakRepository using DataStore<Preferences>. Tracks: currentStreak
+      (Int), lastCompletionDate (LocalDate), longestStreak (Int). On daily puzzle
+      completion: if lastCompletionDate == yesterday, increment currentStreak; if
+      lastCompletionDate == today, no-op (already counted); if lastCompletionDate
+      is older, reset to 1. Update longestStreak if currentStreak exceeds it.
+      Streak is evaluated per difficulty — completing ANY difficulty on a day
+      counts as that day's completion.
+    status: "untested"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/streak/StreakRepositoryTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/streak/StreakRepository.kt"
+    priority: 26
+    dependencies: ["S02-F003"]
+    domain: "backend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S02-F010"
+    name: "Streak milestone badges (7/30/100/365 days)"
+    description: |
+      Implement milestone badge display. When streak reaches 7, 30, 100, or 365,
+      display the corresponding badge on the home screen and on the completion card.
+      Badges: 7 = Weekly Warrior (fire emoji), 30 = Monthly Master (star emoji),
+      100 = Century Solver (gem emoji), 365 = Year of Logic (crown emoji).
+      Badge is awarded once and persists — reaching streak 7 shows the badge
+      forever even if streak resets later. Highest earned badge displays.
+    status: "untested"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/streak/StreakBadgeTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/streak/StreakBadgeProvider.kt"
+    priority: 27
+    dependencies: ["S02-F009"]
+    domain: "backend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S02-F011"
+    name: "Home screen (daily status, streak display, midnight countdown)"
+    description: |
+      Implement the main HomeScreen @Composable. Shows: app title/logo, difficulty
+      selector (S02-F006), current streak count with highest milestone badge,
+      countdown timer to midnight (next puzzle). Countdown updates every second
+      via a ticker Flow. If all difficulties for today are completed, shows a
+      "All done! Next puzzle in HH:MM:SS" message. Tapping a difficulty CTA
+      navigates to the puzzle screen.
+    status: "untested"
+    test_file: "app/src/androidTest/kotlin/org/dgeek/sumgrid/ui/HomeScreenTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/HomeScreen.kt"
+    priority: 43
+    dependencies: ["S02-F006", "S02-F009", "S02-F010"]
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+log:
+  - timestamp: "2026-03-14T00:00:00Z"
+    agent: "initializer"
+    action: "expanded_goal"
+    feature_id: null
+    result: "Initialized S02 domain memory with 11 features covering the complete daily puzzle loop. S02 is BLOCKED until S01 passes. Feature order: backend logic (F001-F003, F005, F007, F009, F010) before UI (F004, F006, F008, F011). F002 (background precompute) can be deferred to last as it is a performance optimization."
+    duration_ms: 0
+
+tried: {}
+
+current:
+  feature_id: null
+  started_at: null
+  status: "idle"
+
+tests:
+  total: 0
+  passing: 0
+  failing: 0
+  skipped: 0
+  last_run: null
+  command: "./gradlew test"
+  coverage: null
+
+metadata:
+  workflow_type: "sprint"
+  parent_epic: "001-sumgrid-phase-1-mvp"
+  sprint_id: "S02"
+  source: "initializer"
+  migration_date: null
+  estimated_days: 11
+  is_critical_path: false
+  blocked_by: ["S01"]
+  unblocks: ["S03"]

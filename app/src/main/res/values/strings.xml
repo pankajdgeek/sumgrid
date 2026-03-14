@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">SumGrid</string>
+    <string name="app_tagline">The daily number puzzle</string>
 </resources>

@@ -1,0 +1,388 @@
+# Domain Memory v1.0 — Sprint S03
+# SumGrid Phase 1 MVP — Sprint 3: Polish, Firebase, Onboarding, and Play Store
+# Location: epics/001-sumgrid-phase-1-mvp/sprints/S03/domain-memory.yaml
+#
+# CRITICAL: This file lives ON DISK, not in agent context.
+# Workers read this file, pick ONE feature, implement it, update status, and EXIT.
+# Tests are the SOURCE OF TRUTH for feature status.
+#
+# DEPENDENCY: Sprint S01 and Sprint S02 must be fully passing before S03 work begins.
+
+version: "1.0"
+created: "2026-03-14T00:00:00Z"
+last_updated: "2026-03-14T00:00:00Z"
+
+goal:
+  original_prompt: "SumGrid Phase 1 MVP - Sprint S03: Polish, Firebase, Onboarding, and Play Store"
+  expanded_description: |
+    Sprint S03 transforms the functional app from S01+S02 into a shippable, polished
+    product. It covers the visual design system (deep indigo/amber/dark mode),
+    accessibility requirements, Firebase integration, the first-time user experience
+    (onboarding puzzle), the in-app review prompt, and the complete Play Store listing.
+
+    Visual design decisions:
+    - Primary background: deep indigo (#1A1040 equivalent in OKLCH)
+    - Accent/sums: amber (#F59E0B equivalent in OKLCH)
+    - Grid cells: white/near-white backgrounds with indigo borders
+    - Dark mode: system-following via isSystemInDarkTheme(), ships at launch
+    - Typography: Material3 defaults, dynamic text sizing via LocalDensity
+
+    Onboarding puzzle design:
+    - Curated 3x3 puzzle with only 1 empty cell (trivially solved in < 10 seconds)
+    - On solve: brief celebration + tooltip "Come back tomorrow for a new puzzle"
+    - Second launch: 3x3 with 2 empty cells
+    - Third launch: 3x3 with 4 empty cells
+    - Fourth launch onwards: standard daily puzzle system
+    - No tutorial screens, no text walls — learning by doing
+
+    Firebase events to track from Day 1:
+    - puzzle_started (difficulty, date)
+    - puzzle_completed (difficulty, date, elapsed_seconds)
+    - puzzle_abandoned (difficulty, date, cells_filled)
+    - share_tapped (difficulty, date)
+    - streak_milestone (streak_days)
+    - onboarding_completed (attempt_number)
+    - app_open (daily)
+
+  success_criteria:
+    - "Deep indigo background and amber accents render correctly in light and dark mode"
+    - "Dark mode follows system setting and switches without app restart"
+    - "App renders correctly at 360dp width (minimum supported) with no clipping"
+    - "All interactive elements meet 48dp minimum touch target size"
+    - "Colorblind indicators: row/column headers show checkmark (complete) + X (error) alongside color"
+    - "Dynamic text sizing: app layout is not broken at font scale 0.85x, 1.0x, or 1.3x"
+    - "Firebase Analytics receives puzzle_started and puzzle_completed events during smoke test"
+    - "Firebase Crashlytics initialized — test crash button visible in debug build only"
+    - "Onboarding puzzle sequence plays correctly on first three launches"
+    - "From fourth launch onward, onboarding is skipped and daily puzzle is shown"
+    - "In-app review prompt appears after the third puzzle completion (not before)"
+    - "In-app review prompt does NOT appear if the device Play Store is unavailable"
+    - "Play Store: 5 screenshots prepared in correct dimensions (1080x1920px)"
+    - "Play Store: feature graphic prepared (1024x500px)"
+    - "Play Store: ASO-optimized short description (80 chars max) and long description drafted"
+    - "APK size < 5 MB in release build with R8 full mode enabled"
+
+  constraints:
+    - "Requires S01 and S02 to be fully passing before implementation starts"
+    - "Material3 theming via MaterialTheme — do NOT hardcode colors as hex literals"
+    - "Design tokens in a single Theme.kt file — Color.kt, Type.kt, Shape.kt as per Material3 convention"
+    - "TalkBack/screen reader support: all cells and interactive elements have contentDescription"
+    - "Firebase must be initialized in Application.onCreate() — not lazily"
+    - "In-app review must use Google Play In-App Review API (com.google.android.play:review)"
+    - "Play Store screenshots must be taken from a real or emulator device (not designed in Figma)"
+    - "No sound effects in S03 — deferred to Phase 2"
+
+features:
+  - id: "S03-F001"
+    name: "Deep indigo/amber Material3 theme"
+    description: |
+      Implement the full Material3 color scheme for SumGrid. Primary color: deep indigo
+      (colorScheme.primary). Accent/tertiary: amber. Surface: white in light, near-black
+      in dark. Error: standard Material3 red. Define Color.kt with named OKLCH-derived
+      constants. Define LightColorScheme and DarkColorScheme in Theme.kt.
+      Apply via MaterialTheme wrapping the entire app in MainActivity.
+      Every color in the app must reference a theme token — zero hardcoded hex values.
+    status: "untested"
+    test_file: "app/src/androidTest/kotlin/org/dgeek/sumgrid/ui/theme/ThemeTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/theme/Theme.kt"
+    priority: 51
+    dependencies: []
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S03-F002"
+    name: "Dark mode support (system-following)"
+    description: |
+      Wire up dark mode via isSystemInDarkTheme() in Theme.kt. The app must switch
+      between LightColorScheme and DarkColorScheme automatically based on the device
+      system setting. No in-app toggle in Phase 1 (follows system only). Verify that
+      grid cells, sum indicators, number pad, home screen, and completion card all
+      render correctly in both light and dark mode.
+    status: "untested"
+    test_file: "app/src/androidTest/kotlin/org/dgeek/sumgrid/ui/theme/DarkModeTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/theme/Theme.kt"
+    priority: 52
+    dependencies: ["S03-F001"]
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S03-F003"
+    name: "Responsive layout (360dp minimum, one-handed play)"
+    description: |
+      Audit and fix all screen layouts so the complete app works on a 360dp x 640dp
+      viewport. Grid must not overflow its container. Number pad must not cover grid
+      cells. Home screen content must not be cut off. All layouts tested at 360dp and
+      420dp widths via ComposeTestRule with custom display metrics. One-handed play:
+      number pad positioned in the bottom half of the screen, reachable without
+      repositioning grip.
+    status: "untested"
+    test_file: "app/src/androidTest/kotlin/org/dgeek/sumgrid/ui/ResponsiveLayoutTest.kt"
+    impl_file: null
+    priority: 53
+    dependencies: ["S01-F006", "S01-F008", "S02-F011"]
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S03-F004"
+    name: "Colorblind-friendly sum indicators (shape + color)"
+    description: |
+      Row and column sum indicators must communicate status through both color AND
+      shape/symbol to support colorblind players. In addition to the green/red/gray
+      color coding: complete rows/columns show a checkmark icon; over-target rows/
+      columns show an X icon; incomplete rows/columns show no icon (just the sum
+      number). Icons use the Material3 icon set. Behavior verified in both light
+      and dark mode.
+    status: "untested"
+    test_file: "app/src/androidTest/kotlin/org/dgeek/sumgrid/ui/ColorblindIndicatorTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/SumIndicator.kt"
+    priority: 54
+    dependencies: ["S01-F009", "S03-F001"]
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S03-F005"
+    name: "Dynamic text sizing (respects system font scale)"
+    description: |
+      Verify that all text in the app respects the system font scale setting. All
+      TextStyle definitions must use sp units (not dp). Layout must not break at
+      0.85x, 1.0x, or 1.3x font scale. Grid cell numbers, sum indicators, number
+      pad buttons, and home screen text must all scale correctly. Test using
+      ComposeTestRule with fontScale parameter on the Configuration.
+    status: "untested"
+    test_file: "app/src/androidTest/kotlin/org/dgeek/sumgrid/ui/FontScaleTest.kt"
+    impl_file: null
+    priority: 55
+    dependencies: ["S03-F003"]
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S03-F006"
+    name: "Firebase Analytics initialization and event tracking"
+    description: |
+      Add Firebase Analytics to the project (google-services.json already exists in
+      the dgeek project). Initialize FirebaseAnalytics in Application.onCreate().
+      Instrument the following events: puzzle_started, puzzle_completed (with
+      elapsed_seconds param), puzzle_abandoned, share_tapped, streak_milestone,
+      onboarding_completed, app_open. Wrap all analytics calls in an AnalyticsTracker
+      interface so they can be no-op'd in tests. Verify in Firebase DebugView that
+      events arrive within 30 seconds during manual smoke test.
+    status: "untested"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/analytics/AnalyticsTrackerTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/analytics/AnalyticsTracker.kt"
+    priority: 61
+    dependencies: []
+    domain: "backend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S03-F007"
+    name: "Firebase Crashlytics integration"
+    description: |
+      Add Firebase Crashlytics to the project. Initialize in Application.onCreate()
+      alongside Analytics. Set custom keys on each crash report: current_difficulty,
+      puzzle_day_number, app_version. In debug builds only, add a hidden crash test
+      button (long-press app logo 5 times) that throws a test exception to verify
+      Crashlytics is receiving reports. Verify crash report appears in Firebase
+      console within 5 minutes of test crash.
+    status: "untested"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/analytics/CrashlyticsTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/analytics/CrashlyticsInitializer.kt"
+    priority: 62
+    dependencies: ["S03-F006"]
+    domain: "backend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S03-F008"
+    name: "Onboarding puzzle sequence (curated, 1->2->4 empty cells)"
+    description: |
+      Implement OnboardingRepository (DataStore backed) that tracks how many times
+      the app has been launched and whether onboarding is complete. First three
+      launches show specially curated 3x3 puzzles (not date-seeded):
+        Launch 1: 3x3 with exactly 1 empty cell (answer is trivially forced)
+        Launch 2: 3x3 with exactly 2 empty cells
+        Launch 3: 3x3 with exactly 4 empty cells
+      These puzzles are hard-coded constants (not generated) to guarantee solvability
+      and appropriate difficulty. Launch 4+: onboarding is marked complete, daily
+      puzzle system takes over. Onboarding puzzles do not count toward streak.
+    status: "untested"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/onboarding/OnboardingRepositoryTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/onboarding/OnboardingRepository.kt"
+    priority: 63
+    dependencies: ["S01-F006", "S01-F007", "S01-F008", "S01-F009"]
+    domain: "backend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S03-F009"
+    name: "First-time user experience (app opens directly to onboarding puzzle)"
+    description: |
+      Wire up FTUE navigation. On first launch: app opens directly to the onboarding
+      puzzle screen (no splash screen, no account creation, no permissions dialog).
+      On onboarding puzzle completion: brief celebration animation plays, then a
+      single subtitle appears: "Come back tomorrow for a new puzzle." A "Got it"
+      button dismisses and navigates to home screen. On subsequent onboarding launches
+      (2nd and 3rd): skip directly to the onboarding puzzle without any tooltip.
+      On fourth launch: skip onboarding, go to home screen directly.
+    status: "untested"
+    test_file: "app/src/androidTest/kotlin/org/dgeek/sumgrid/ui/FTUETest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/navigation/AppNavigation.kt"
+    priority: 64
+    dependencies: ["S03-F008", "S02-F004"]
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S03-F010"
+    name: "In-app review prompt (after 3rd puzzle completion)"
+    description: |
+      Integrate Google Play In-App Review API. After the player completes their 3rd
+      daily puzzle (lifetime, not daily), trigger the review flow using ReviewManager.
+      The review UI is controlled by Google — the app simply requests it at the right
+      moment. Only request once (persist a flag in DataStore). Handle the case where
+      Play Store is not available (e.g., sideloaded APK) by catching the exception
+      silently and not retrying. Do NOT fake the review count or show our own rating
+      dialog.
+    status: "untested"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/review/InAppReviewTriggerTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/review/InAppReviewTrigger.kt"
+    priority: 65
+    dependencies: ["S02-F003"]
+    domain: "backend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S03-F011"
+    name: "Play Store screenshots (5 required screenshots)"
+    description: |
+      Capture the 5 required Play Store screenshots at 1080x1920px (portrait).
+      Required screens:
+        1. Daily puzzle in-progress with timer running (Medium difficulty, mid-solve)
+        2. Completion card showing time and share button
+        3. Share result card preview (the Unicode grid, no numbers)
+        4. Home screen with 7-day streak and Weekly Warrior badge
+        5. Difficulty selection screen showing Beginner/Easy/Medium
+      Screenshots must use the polished theme (S03-F001) and real puzzle content.
+      Captured from an emulator at Pixel 5 profile (1080x2340, 440dpi).
+    status: "untested"
+    test_file: null
+    impl_file: "play-store/screenshots/"
+    priority: 71
+    dependencies: ["S03-F001", "S03-F002", "S02-F008", "S02-F011"]
+    domain: "general"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S03-F012"
+    name: "Play Store feature graphic and ASO-optimized listing"
+    description: |
+      Create Play Store listing assets and copy:
+        Feature graphic (1024x500px): 4x4 grid with amber sum indicators on indigo
+          background. Clean, minimal, premium. No text overlay (Play Store adds title).
+        Short description (80 chars max): "Free daily number puzzle. Fill the grid,
+          match the sums. No ads, no accounts."
+        Long description: ASO-optimized with keywords: number puzzle, daily challenge,
+          math game, logic puzzle, brain teaser, sudoku alternative, free, no ads,
+          offline. Include the mechanic explanation, the daily habit hook, and the
+          dgeek philosophy. 3,000 chars max.
+        App name: "SumGrid - Daily Number Puzzle"
+        Package: org.dgeek.sumgrid
+      Submit to Play Store internal testing track immediately — expect 1-2 week review
+      for new developer account.
+    status: "untested"
+    test_file: null
+    impl_file: "play-store/listing/"
+    priority: 72
+    dependencies: ["S03-F011"]
+    domain: "general"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+log:
+  - timestamp: "2026-03-14T00:00:00Z"
+    agent: "initializer"
+    action: "expanded_goal"
+    feature_id: null
+    result: "Initialized S03 domain memory with 12 features. S03 is BLOCKED until S01 and S02 both pass. Feature execution order: theme (F001-F002), accessibility (F003-F005), Firebase (F006-F007), onboarding logic (F008-F009), review prompt (F010), Play Store assets (F011-F012)."
+    duration_ms: 0
+
+tried: {}
+
+current:
+  feature_id: null
+  started_at: null
+  status: "idle"
+
+tests:
+  total: 0
+  passing: 0
+  failing: 0
+  skipped: 0
+  last_run: null
+  command: "./gradlew test connectedAndroidTest"
+  coverage: null
+
+metadata:
+  workflow_type: "sprint"
+  parent_epic: "001-sumgrid-phase-1-mvp"
+  sprint_id: "S03"
+  source: "initializer"
+  migration_date: null
+  estimated_days: 11
+  is_critical_path: false
+  blocked_by: ["S01", "S02"]
+  unblocks: []
+  is_final_sprint: true

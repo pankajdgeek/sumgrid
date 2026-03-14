@@ -1,0 +1,281 @@
+# Domain Memory v1.0 — Sprint S01
+# SumGrid Phase 1 MVP — Sprint 1: Core Engine and Grid UI
+# Location: epics/001-sumgrid-phase-1-mvp/sprints/S01/domain-memory.yaml
+#
+# CRITICAL: This file lives ON DISK, not in agent context.
+# Workers read this file, pick ONE feature, implement it, update status, and EXIT.
+# Tests are the SOURCE OF TRUTH for feature status.
+#
+# Sprint goal: Build the puzzle engine foundation and interactive grid.
+# This is the CRITICAL PATH — nothing in S02 or S03 can begin until S01 passes.
+
+version: "1.0"
+created: "2026-03-14T00:00:00Z"
+last_updated: "2026-03-14T00:00:00Z"
+
+goal:
+  original_prompt: "SumGrid Phase 1 MVP - Sprint S01: Core Engine and Grid UI"
+  expanded_description: |
+    Sprint S01 covers all puzzle engine logic and the interactive grid UI.
+    These are the highest-complexity, highest-risk components of the MVP.
+    The xorshift128 PRNG and constraint propagation validator must be built
+    and proven correct (10,000-puzzle test suite) before any daily puzzle
+    system or UI work can begin.
+
+    Deliverables:
+      - xorshift128 PRNG: deterministic, portable, no reliance on Kotlin stdlib random
+      - PuzzleGenerator: seeded generation producing NxN grids with valid row/col sums
+      - UniqueSolutionValidator: constraint propagation — rejects any grid with 0 or 2+ solutions
+      - DifficultyCalibrator: counts constraint-propagation steps to classify Beginner/Easy/Medium
+      - Automated test suite: 10,000 puzzles generated and validated (zero failures acceptable)
+      - GridRenderer: Compose Canvas drawing NxN grid responsive to screen width
+      - CellSelection: tap a cell to select/deselect, visual highlight
+      - NumberPadInput: bottom-anchored 1-9 pad, fills selected cell, clears on re-tap
+      - SumValidationFeedback: row/column headers update live green (exact) / red (over) / gray (incomplete)
+
+  success_criteria:
+    - "xorshift128 generates identical sequences on API 24 through API 35 with same seed"
+    - "PuzzleGenerator never produces a grid with row or column sum mismatch"
+    - "UniqueSolutionValidator returns exactly one solution for every generated puzzle"
+    - "10,000-puzzle test suite: zero failures, runs in < 60 seconds on CI"
+    - "DifficultyCalibrator correctly classifies 3x3 as Beginner, 4x4 as Easy, 5x5 as Medium"
+    - "GridRenderer fills available width on 360dp and 420dp screen widths without clipping"
+    - "Selecting a cell highlights it; tapping again deselects"
+    - "Number pad fills selected cell; tapping same number on a filled cell clears it"
+    - "Sum indicators update every time a cell value changes (no debounce)"
+    - "Sum indicator green when row/col sum equals target, red when over, gray when under"
+
+  constraints:
+    - "xorshift128 must be implemented from scratch — do NOT use kotlin.random.Random(seed)"
+    - "Constraint propagation solver must handle 3x3, 4x4, and 5x5 grid sizes"
+    - "PuzzleGenerator must call UniqueSolutionValidator after every cell removal"
+    - "Grid rendering must use Compose Canvas (not LazyGrid or RecyclerView)"
+    - "Number pad must be reachable with thumb on phones 360dp+ wide"
+    - "All logic classes (PRNG, generator, validator) must be pure Kotlin with no Android deps (testable in JVM unit tests)"
+
+features:
+  - id: "S01-F001"
+    name: "xorshift128 PRNG"
+    description: |
+      Implement a custom xorshift128 pseudo-random number generator in pure Kotlin.
+      Must accept a Long seed, produce a deterministic sequence of Int values, and
+      expose a nextInt(bound: Int) method. Must produce byte-for-byte identical output
+      on all Android versions (API 24-35) and be portable to TypeScript in the future.
+      No dependency on kotlin.random.Random or java.util.Random.
+    status: "untested"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/engine/Xorshift128Test.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/engine/Xorshift128.kt"
+    priority: 1
+    dependencies: []
+    domain: "backend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S01-F002"
+    name: "Puzzle generator (seeded, deterministic)"
+    description: |
+      Implement PuzzleGenerator that uses xorshift128 to fill an NxN grid (N=3,4,5)
+      with numbers in range [1..maxVal] where maxVal is 5 for 3x3, 7 for 4x4, 9 for 5x5.
+      Calculates row and column target sums from the completed grid. Then removes cells
+      one at a time (calling UniqueSolutionValidator after each removal) until the correct
+      number of empty cells for the target difficulty is reached. Given the same seed and
+      difficulty, must always produce the same puzzle.
+    status: "untested"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/engine/PuzzleGeneratorTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/engine/PuzzleGenerator.kt"
+    priority: 2
+    dependencies: ["S01-F001", "S01-F003"]
+    domain: "backend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S01-F003"
+    name: "Constraint propagation unique-solution validator"
+    description: |
+      Implement UniqueSolutionValidator using constraint propagation + backtracking.
+      Given a partially-filled NxN grid and row/column targets, must determine whether
+      exactly one solution exists. Returns SolutionCount: NONE | UNIQUE | MULTIPLE.
+      Must handle 3x3, 4x4, 5x5. Performance must be fast enough to call after every
+      cell removal during puzzle generation (target: < 50ms per call for 5x5).
+    status: "untested"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/engine/UniqueSolutionValidatorTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/engine/UniqueSolutionValidator.kt"
+    priority: 1
+    dependencies: []
+    domain: "backend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S01-F004"
+    name: "Difficulty calibration (Beginner/Easy/Medium)"
+    description: |
+      Implement DifficultyCalibrator that counts the number of constraint-propagation
+      steps needed to solve a puzzle (without backtracking). Maps step count to difficulty:
+      Beginner (3x3, ~4 empty cells), Easy (4x4, ~8 empty cells), Medium (5x5, ~15 empty cells).
+      PuzzleGenerator uses this to verify the generated puzzle matches target difficulty;
+      if it doesn't, it retries with a seed offset.
+    status: "untested"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/engine/DifficultyCalibrationTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/engine/DifficultyCalibrator.kt"
+    priority: 3
+    dependencies: ["S01-F003"]
+    domain: "backend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S01-F005"
+    name: "10,000-puzzle automated test suite"
+    description: |
+      Create a parameterized JVM unit test that generates 10,000 puzzles across all
+      three difficulties (roughly 3,333 each), runs UniqueSolutionValidator on every
+      one, and asserts UNIQUE for all of them. Also verifies that the same seed always
+      produces the same puzzle (determinism test). Must run in < 60 seconds on CI.
+      This is the quality gate — no S02 work should begin until this passes cleanly.
+    status: "untested"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/engine/PuzzleCorpusTest.kt"
+    impl_file: null
+    priority: 4
+    dependencies: ["S01-F001", "S01-F002", "S01-F003"]
+    domain: "backend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S01-F006"
+    name: "Compose Canvas grid renderer"
+    description: |
+      Implement GridRenderer as a @Composable using Canvas. Draws an NxN grid with
+      cells sized to fill the available width (minus padding). Each cell shows its
+      current value (or empty). Row sum targets appear to the right of each row;
+      column sum targets appear below each column. Must work correctly at 360dp and
+      420dp screen widths. Cells visually distinguish: empty, pre-filled (given),
+      and user-filled. Selected cell has a distinct highlight border.
+    status: "untested"
+    test_file: "app/src/androidTest/kotlin/org/dgeek/sumgrid/ui/GridRendererTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/GridRenderer.kt"
+    priority: 11
+    dependencies: []
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S01-F007"
+    name: "Tap-to-select cell interaction"
+    description: |
+      Wire up tap detection on grid cells. Tapping an empty or user-filled cell
+      selects it (highlights it and makes it the target for number pad input).
+      Tapping the selected cell again deselects it. Tapping a pre-filled (given)
+      cell does nothing. Selection state is a ViewModel-backed StateFlow.
+    status: "untested"
+    test_file: "app/src/androidTest/kotlin/org/dgeek/sumgrid/ui/CellSelectionTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/GridInteraction.kt"
+    priority: 12
+    dependencies: ["S01-F006"]
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S01-F008"
+    name: "Bottom number pad input"
+    description: |
+      Implement NumberPad as a @Composable showing buttons 1 through 9 (and a clear
+      button). Positioned at the bottom of the screen within comfortable thumb reach
+      on 360dp+ phones. When a cell is selected, tapping a number fills it. Tapping
+      the same number again (or the clear button) clears the cell. Tapping a number
+      when no cell is selected does nothing. Number pad is hidden when the puzzle is
+      complete. Input is reflected immediately in the grid via ViewModel.
+    status: "untested"
+    test_file: "app/src/androidTest/kotlin/org/dgeek/sumgrid/ui/NumberPadTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/NumberPad.kt"
+    priority: 13
+    dependencies: ["S01-F007"]
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S01-F009"
+    name: "Real-time row/column sum validation (green/red/gray)"
+    description: |
+      As the player fills cells, row and column sum indicators update in real time.
+      Indicator color: green when current sum equals target, red when current sum
+      exceeds target, gray when current sum is less than target (incomplete).
+      Updates trigger on every cell value change — no debounce or batching.
+      Implemented as a pure computation in the ViewModel from the current grid state.
+      No separate "check" button. Sum indicators are the only feedback mechanism.
+    status: "untested"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/viewmodel/SumValidationTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/viewmodel/PuzzleViewModel.kt"
+    priority: 14
+    dependencies: ["S01-F008"]
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+log:
+  - timestamp: "2026-03-14T00:00:00Z"
+    agent: "initializer"
+    action: "expanded_goal"
+    feature_id: null
+    result: "Initialized S01 domain memory with 9 features. S01 is the critical path for the epic — puzzle engine (F001-F005) must be completed and the 10,000-puzzle suite must pass before S02 begins. Grid UI (F006-F009) can be developed in parallel with engine work but requires engine data models to compile."
+    duration_ms: 0
+
+tried: {}
+
+current:
+  feature_id: null
+  started_at: null
+  status: "idle"
+
+tests:
+  total: 0
+  passing: 0
+  failing: 0
+  skipped: 0
+  last_run: null
+  command: "./gradlew test"
+  coverage: null
+
+metadata:
+  workflow_type: "sprint"
+  parent_epic: "001-sumgrid-phase-1-mvp"
+  sprint_id: "S01"
+  source: "initializer"
+  migration_date: null
+  estimated_days: 10
+  is_critical_path: true
+  unblocks: ["S02", "S03"]
