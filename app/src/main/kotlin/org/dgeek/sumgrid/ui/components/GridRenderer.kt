@@ -183,12 +183,12 @@ private fun DrawScope.drawGrid(
     for (r in 0 until n) {
         val indicator = state.rowSumIndicators[r]
         val labelColor = indicatorColor(indicator)
-        val target = state.puzzle.rowTargets[r].toString()
+        val labelText = formatSumLabel(state.puzzle.rowTargets[r], indicator)
         // Position: right of the last cell, centred vertically in the row
         val labelX = n * cellSize + cellSize * 0.08f
         val labelY = r * cellSize
         drawCenteredText(
-            text         = target,
+            text         = labelText,
             textColor    = labelColor,
             cellX        = labelX,
             cellY        = labelY,
@@ -203,11 +203,11 @@ private fun DrawScope.drawGrid(
     for (c in 0 until n) {
         val indicator = state.colSumIndicators[c]
         val labelColor = indicatorColor(indicator)
-        val target = state.puzzle.colTargets[c].toString()
+        val labelText = formatSumLabel(state.puzzle.colTargets[c], indicator)
         val labelX = c * cellSize
         val labelY = n * cellSize + cellSize * 0.05f
         drawCenteredText(
-            text         = target,
+            text         = labelText,
             textColor    = labelColor,
             cellX        = labelX,
             cellY        = labelY,
@@ -248,4 +248,22 @@ private fun indicatorColor(indicator: SumIndicatorColor): Color = when (indicato
     SumIndicatorColor.GREEN -> ColorSumGreen
     SumIndicatorColor.RED   -> ColorSumRed
     SumIndicatorColor.GRAY  -> ColorSumGray
+}
+
+/**
+ * Format a sum label with a colorblind-friendly symbol suffix.
+ *
+ * - GREEN (exact match): appends " ✓"
+ * - RED (over target):   appends " ✗"
+ * - GRAY (under target): no suffix
+ *
+ * Extracted as an `internal` pure function for unit-testability.
+ */
+internal fun formatSumLabel(target: Int, indicator: SumIndicatorColor): String {
+    val suffix = when (indicator) {
+        SumIndicatorColor.GREEN -> " ✓"
+        SumIndicatorColor.RED   -> " ✗"
+        SumIndicatorColor.GRAY  -> ""
+    }
+    return "$target$suffix"
 }
