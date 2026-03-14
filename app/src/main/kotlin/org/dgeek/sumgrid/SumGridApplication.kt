@@ -9,6 +9,7 @@ import org.dgeek.sumgrid.daily.DataStoreCompletionStore
 import org.dgeek.sumgrid.daily.DailyPuzzleRepository
 import org.dgeek.sumgrid.engine.PuzzleGenerator
 import org.dgeek.sumgrid.engine.UniqueSolutionValidator
+import org.dgeek.sumgrid.review.InAppReviewTrigger
 import org.dgeek.sumgrid.streak.InMemoryStreakRepository
 import org.dgeek.sumgrid.streak.StreakRepository
 
@@ -29,6 +30,11 @@ private val Context.streakDataStore: DataStore<Preferences> by preferencesDataSt
 /** Stores onboarding / difficulty preference. */
 private val Context.onboardingDataStore: DataStore<Preferences> by preferencesDataStore(
     name = "onboarding"
+)
+
+/** Stores in-app review state: lifetime_completions, review_requested. */
+private val Context.reviewDataStore: DataStore<Preferences> by preferencesDataStore(
+    name = "review"
 )
 
 // ---------------------------------------------------------------------------
@@ -66,6 +72,15 @@ class AppContainer(application: SumGridApplication) {
      */
     val inMemoryStreakRepository: InMemoryStreakRepository by lazy {
         InMemoryStreakRepository()
+    }
+
+    /**
+     * In-app review trigger. Tracks lifetime puzzle completions and requests the
+     * Play Store review dialog once the user has completed [InAppReviewTrigger.REVIEW_THRESHOLD]
+     * puzzles. The request is made at most once per install.
+     */
+    val reviewTrigger: InAppReviewTrigger by lazy {
+        InAppReviewTrigger(application, application.reviewDataStore)
     }
 }
 
