@@ -239,17 +239,6 @@ fun HomeScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-
-            // ── Footer ─────────────────────────────────────────────────────
-            Text(
-                text = "More by dgeek",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
-            )
         }
     }
 }
