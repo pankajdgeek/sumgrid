@@ -37,11 +37,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.painterResource
@@ -374,9 +375,13 @@ private fun BadgeRow(
     ) {
         StreakBadge.entries.forEach { badge ->
             val earned = badge in earnedBadges
+            // Build accessibility label: e.g. "Weekly Warrior — Earned"
+            val earnedSuffix = if (earned) "Earned" else "Locked"
+            val accessibilityLabel = "${badge.name.replace('_', ' ').lowercase().replaceFirstChar { it.uppercaseChar() }} — $earnedSuffix"
             BadgeItem(
                 badge = badge,
                 earned = earned,
+                accessibilityLabel = accessibilityLabel,
                 onClick = { onBadgeTap(badge) }
             )
         }
@@ -387,10 +392,10 @@ private fun BadgeRow(
 private fun BadgeItem(
     badge: StreakBadge,
     earned: Boolean,
+    accessibilityLabel: String = badge.icon,
     onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val label = if (earned) "${badge.displayName} — Earned" else "${badge.displayName} — Locked"
     Column(
         modifier = modifier
             .clickable(onClick = onClick)
@@ -399,19 +404,36 @@ private fun BadgeItem(
     ) {
         // Wrap emoji in a Box with graphicsLayer: unearned badges get reduced alpha AND
         // full desaturation via ColorMatrix.setToSaturation(0f) to appear grayscale/locked.
+        val badgeAlpha = if (earned) 1f else 0.38f
+        val badgeColorFilter = if (earned) null else ColorFilter.colorMatrix(
+            ColorMatrix().apply { setToSaturation(0f) }
+        )
         Box(
-            modifier = Modifier.graphicsLayer {
-                alpha = if (earned) 1f else 0.38f
-                colorFilter = if (earned) null else ColorFilter.colorMatrix(
-                    ColorMatrix().apply { setToSaturation(0f) }
-                )
-            }
+            modifier = Modifier
+                .alpha(badgeAlpha)
+                .drawWithCache {
+                    val paint = androidx.compose.ui.graphics.Paint().apply {
+                        colorFilter = badgeColorFilter
+                    }
+                    onDrawWithContent {
+                        if (badgeColorFilter != null) {
+                            drawContext.canvas.saveLayer(
+                                bounds = androidx.compose.ui.geometry.Rect(0f, 0f, size.width, size.height),
+                                paint = paint
+                            )
+                            drawContent()
+                            drawContext.canvas.restore()
+                        } else {
+                            drawContent()
+                        }
+                    }
+                }
         ) {
             Text(
                 text = badge.icon,
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.semantics {
-                    contentDescription = label
+                    contentDescription = accessibilityLabel
                 }
             )
         }
