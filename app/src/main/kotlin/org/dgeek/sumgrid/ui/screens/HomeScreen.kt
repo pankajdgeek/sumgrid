@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import org.dgeek.sumgrid.engine.models.Difficulty
 import org.dgeek.sumgrid.streak.StreakBadge
+import org.dgeek.sumgrid.ui.components.BadgeDetailBottomSheet
 import org.dgeek.sumgrid.ui.components.DifficultySelector
 import org.dgeek.sumgrid.viewmodel.HomeViewModel
 
@@ -150,9 +151,13 @@ fun HomeScreen(
                 onBadgeTap = { badge -> selectedBadge = badge }
             )
 
-            // Bottom sheet placeholder — wired in Sprint 2C (T024)
+            // Badge detail bottom sheet — opened when user taps a badge (S2C-F002)
             if (selectedBadge != null) {
-                // TODO(S2C-T024): show badge detail bottom sheet for selectedBadge
+                BadgeDetailBottomSheet(
+                    badge = selectedBadge!!,
+                    earned = selectedBadge!! in state.earnedBadges,
+                    onDismiss = { selectedBadge = null }
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
