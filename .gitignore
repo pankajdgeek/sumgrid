@@ -13,3 +13,18 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Firebase — google-services.json is provisioned per-machine, never committed
+google-services.json
+app/google-services.json
+
+# Android build outputs
+app/build/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Gradle wrapper jar (binary — re-generated via `gradle wrapper`)
+gradle/wrapper/gradle-wrapper.jar
+.kotlin/

@@ -1,0 +1,32 @@
+SumGrid is a free daily number puzzle that challenges your logic skills in minutes, not hours.
+
+HOW TO PLAY
+Fill every cell in the grid with a number so that each row and each column adds up to its target sum. Every puzzle has exactly one solution — no guessing required. Start with a 3×3 grid and work your way up to 5×5 as your skills grow.
+
+THREE DIFFICULTY LEVELS
+• Beginner (3×3) — Perfect for a quick brain warm-up. Solve in under 2 minutes.
+• Easy (4×4) — A satisfying daily challenge. Most players finish in 3–5 minutes.
+• Medium (5×5) — A true logic puzzle for number enthusiasts. Can you beat 10 minutes?
+
+ONE NEW PUZZLE EVERY DAY
+A fresh puzzle drops at midnight, and every player worldwide gets the same puzzle. Compare your solve time with friends by sharing your spoiler-free result card — no numbers revealed, just a grid of emoji showing which cells you solved.
+
+BUILT FOR YOUR DAILY ROUTINE
+SumGrid is designed to be a calm, focused moment in your day. No flashing ads. No pop-ups. No account required. Just open the app, solve the puzzle, and get on with your day. Build a streak by solving every day — earn badges at 7, 30, 100, and 365 days.
+
+WHY PLAYERS LOVE SUMGRID
+Unlike sudoku, SumGrid puzzles are compact and quick. Unlike crosswords, no trivia knowledge is needed — just pure number logic. It is the perfect brain teaser for commutes, coffee breaks, or winding down before bed.
+
+FEATURES
+✓ Free forever — no ads, no in-app purchases, no subscriptions
+✓ Works completely offline — no internet connection needed
+✓ Daily challenge with a new puzzle every day
+✓ Streak tracking with milestone badges
+✓ Share your results without spoilers
+✓ Dark mode follows your system setting
+✓ Accessible design with colorblind-friendly indicators
+✓ Tiny download — under 5 MB
+
+SumGrid is a math game and logic puzzle rolled into one. If you enjoy number puzzles, daily challenges, brain teasers, or are looking for a sudoku alternative that respects your time, SumGrid is for you.
+
+Made with care by dgeek. No data collected. No tracking. Just puzzles.

@@ -1,0 +1,141 @@
+# Domain Memory v1.0 — Epic Level
+# SumGrid Phase 1 MVP
+# Location: epics/001-sumgrid-phase-1-mvp/domain-memory.yaml
+#
+# CRITICAL: This file lives ON DISK, not in agent context.
+# Workers read/write to this file. No shared context between Workers.
+# Sprint-level domain memory lives in sprints/S0N/domain-memory.yaml
+# 
+version: "1.0"
+created: "2026-03-14T00:00:00Z"
+last_updated: "2026-03-14T03:00:00Z"
+# === PROJECT GOAL ===
+goal:
+  original_prompt: "SumGrid Phase 1 MVP - Puzzle engine, daily puzzle, grid UI, share card, streaks, visual design, Play Store launch"
+  expanded_description: |
+    SumGrid is a daily number logic puzzle game for Android (Kotlin + Jetpack Compose).
+    Players fill an NxN grid so each row and column adds up to a target sum.
+    Phase 1 ships a fully playable MVP to Google Play Store with the core daily puzzle
+    loop: solve -> celebrate -> share -> streak. No backend required — all puzzles are
+    generated client-side from a date seed using a custom xorshift128 PRNG.
+    Target: <5 MB APK, offline-first, free, no ads. Min SDK: Android 7.0 (API 24).
+
+    Tech stack: Kotlin, Jetpack Compose, Jetpack DataStore, Firebase Analytics +
+    Crashlytics, custom xorshift128 PRNG, constraint-propagation unique-solution validator.
+
+    Critical dev order (must NOT be parallelized):
+      Sprint S01 — PRNG + puzzle engine + validator + test suite + grid UI + input
+      Sprint S02 — Daily puzzle system + completion flow + share card + streak (depends S01)
+      Sprint S03 — Visual design + Firebase + onboarding + Play Store (depends S01 + S02)
+  success_criteria:
+    - "Puzzle engine generates valid, deterministic, uniquely-solvable puzzles for 3x3/4x4/5x5"
+    - "10,000-puzzle test suite passes with zero duplicate-solution failures"
+    - "xorshift128 PRNG produces identical output across all Android API 24+ devices"
+    - "Grid UI renders correctly on phones 360dp to 420dp width"
+    - "Daily puzzle resets at midnight local time; all difficulties share same date seed"
+    - "Completion triggers celebration animation and shows elapsed time"
+    - "Share card generates a spoiler-free Unicode colored grid via Android Intent"
+    - "Streak counter increments on daily completion and persists across app restarts"
+    - "Deep indigo/amber Material3 theme with working dark mode"
+    - "Firebase Analytics and Crashlytics initialized and receiving events on Day 1"
+    - "Onboarding puzzle (1-cell -> 2-cell -> 4-cell progression) plays on first launch"
+    - "Play Store listing submitted: 5 screenshots, feature graphic, ASO description"
+    - "APK size < 5 MB with R8 full-mode shrinking"
+    - "App runs fully offline with no network dependency for core gameplay"
+  constraints:
+    - "Kotlin + Jetpack Compose only (no Flutter)"
+    - "No backend infrastructure — all puzzle generation is client-side from date seed"
+    - "APK < 5 MB; CI must fail if release APK exceeds 4.5 MB"
+    - "Min SDK: API 24 (Android 7.0); Target SDK: API 35"
+    - "Custom xorshift128 PRNG — do NOT use kotlin.random.Random(seed) as sequence may change between Kotlin versions"
+    - "Jetpack DataStore for all persistence — NOT SharedPreferences"
+    - "Free, no ads, no IAP in Phase 1"
+    - "Hard (5x5) and Expert (6x6) difficulties deferred to v1.1"
+    - "Sound effects and haptic feedback deferred to Phase 2"
+    - "No user accounts, no cloud sync, no server calls for gameplay"
+# === SPRINT INDEX ===
+
+# Epic-level index; workers read sprint-level domain-memory.yaml for task details
+sprints:
+  - id: "S01"
+    name: "Core Engine and Grid UI"
+    goal: "Build the puzzle engine foundation and interactive grid — the hardest technical work, critical path"
+    domain_memory: "epics/001-sumgrid-phase-1-mvp/sprints/S01/domain-memory.yaml"
+    status: "untested"
+    estimated_days: 10
+    dependencies: []
+    feature_count: 9
+  - id: "S02"
+    name: "Daily Puzzle Loop"
+    goal: "Wire up the complete daily play loop: date-seeded puzzle, completion, sharing, streak"
+    domain_memory: "epics/001-sumgrid-phase-1-mvp/sprints/S02/domain-memory.yaml"
+    status: "untested"
+    estimated_days: 11
+    dependencies: ["S01"]
+    feature_count: 11
+  - id: "S03"
+    name: "Polish, Firebase, Onboarding, and Play Store"
+    goal: "Deliver a shippable app: visual design, Firebase integration, onboarding, Play Store assets"
+    domain_memory: "epics/001-sumgrid-phase-1-mvp/sprints/S03/domain-memory.yaml"
+    status: "untested"
+    estimated_days: 11
+    dependencies: ["S01", "S02"]
+    feature_count: 12
+# === PROGRESS LOG ===
+log:
+  - timestamp: "2026-03-14T00:00:00Z"
+    agent: "initializer"
+    action: "expanded_goal"
+    feature_id: null
+    result: "Initialized epic domain memory. Expanded SumGrid Phase 1 MVP into 3 sprints with 32 features total (S01: 9, S02: 11, S03: 12). Sprint S01 is the critical path — puzzle engine must be built and validated before any UI work. Estimated 32 dev-days across 7-8 calendar weeks. Launch target: end of May 2026."
+    duration_ms: 0
+  - timestamp: "2026-03-14T02:02:44Z"
+    agent: initializer
+    action: expanded_goal
+    result: 'Initialized epic domain memory: 3 sprints, 32 features total (S01:9, S02:11, S03:12). S01 is the critical path. Launch target: end of May 2026.'
+    feature_id: "null"
+  - timestamp: "2026-03-14T03:00:00Z"
+    agent: "worker"
+    action: "completed_task"
+    feature_id: "T001"
+    result: "Project scaffold complete. Migrated package from com.tarksh.SumGrid to org.dgeek.sumgrid. Updated app/build.gradle.kts (compileSdk 35, R8 full mode, DataStore/WorkManager/Navigation/Firebase/PlayReview deps). Updated gradle/libs.versions.toml (AGP 8.7.3, Compose BOM 2024.12.01, Firebase BOM 33.7.0). Added kotlin-android + Firebase + Crashlytics plugins to root build.gradle.kts. Created SumGridApplication.kt (empty), MainActivity.kt (empty scaffold), Color.kt (deep indigo/amber palette), Theme.kt (Material3 dark+light), Type.kt, Shape.kt. Created full source directory tree under app/src/main/kotlin/org/dgeek/sumgrid/. Created PlaceholderTest.kt in test source set. Added .github/workflows/ci.yml (push/PR on main+epic/* triggers ./gradlew test). Updated .gitignore (google-services.json, APK, keystore, gradle-wrapper.jar). Removed old com.tarksh.SumGrid source tree."
+    duration_ms: 0
+
+tried: {}
+current:
+  feature_id: null
+  started_at: null
+  status: "idle"
+tests:
+  total: 0
+  passing: 0
+  failing: 0
+  skipped: 0
+  last_run: null
+  command: "./gradlew test"
+  coverage: null
+metadata:
+  workflow_type: "epic"
+  parent_epic: null
+  sprint_id: null
+  source: "initializer"
+  migration_date: null
+  total_estimated_days: 32
+  calendar_weeks: 8
+  launch_target: "End of May 2026"
+  package_name: "org.dgeek.sumgrid"
+  min_sdk: 24
+  target_sdk: 35
+  apk_size_limit_mb: 5
+  apk_ci_fail_mb: 4.5
+  north_star_metric: "Day 7 Retention Rate"
+  success_targets:
+    installs_60d: 500
+    d1_retention_pct: 25
+    d7_retention_pct: 15
+    store_rating: 4.5
+  kill_criteria:
+    installs_30d_min: 200
+    d7_retention_min_pct: 10
+    dau_60d_min: 20
+    store_rating_min: 4.0

@@ -1,5 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Legacy View-system theme (used only for Activity window chrome / splash screen).
+    All in-app UI uses Jetpack Compose with SumGridTheme (Theme.kt).
+-->
 <resources>
+    <style name="Theme.SumGrid" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/indigo_40</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.SumGrid.Main</item>
+    </style>
 
-    <style name="Theme.SumGrid" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.SumGrid.Main" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/neutral_99</item>
+        <item name="android:navigationBarColor">@color/neutral_99</item>
+    </style>
 </resources>

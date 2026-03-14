@@ -1,0 +1,24 @@
+Play Store Screenshots Capture Guide
+=====================================
+
+Device: Pixel 5 emulator (1080x2340, 440dpi)
+Output: 1080x1920px PNG (portrait)
+Theme: Must use finalized deep indigo/amber theme
+
+Required Screenshots (5):
+1. screenshot-01.png — Medium puzzle in-progress (mid-solve, sum indicators visible)
+2. screenshot-02.png — Completion card showing elapsed time and share button
+3. screenshot-03.png — Home screen with 7-day streak and Weekly Warrior badge
+4. screenshot-04.png — Difficulty selection showing all three options, one completed
+5. screenshot-05.png — Onboarding puzzle (launch 1, "Come back tomorrow" tooltip)
+
+Feature Graphic:
+- feature-graphic.png — 1024x500px, stylized 4x4 grid on deep indigo background
+
+Capture Steps:
+1. Start Pixel 5 emulator: emulator -avd Pixel_5_API_35
+2. Install debug APK: ./gradlew installDebug
+3. Use adb shell screencap + adb pull for each screenshot
+4. Resize to 1080x1920 if needed: convert -resize 1080x1920 input.png output.png
+
+No personal data or developer-identifying information should be visible.

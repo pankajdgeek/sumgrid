@@ -1,0 +1,405 @@
+# Domain Memory v1.0 — Epic Level Overview
+# Epic: 002-sumgrid-uiux-modernization-gridrenderer
+# CRITICAL: This file lives ON DISK, not in agent context.
+# Workers read/write to this file. No shared context between Workers.
+# Tests are the SOURCE OF TRUTH for feature status.
+
+version: "1.0"
+created: "2026-03-14T04:30:39Z"
+last_updated: "2026-03-14T04:30:39Z"
+
+# === PROJECT GOAL ===
+goal:
+  original_prompt: "SumGrid UI/UX Modernization - GridRenderer theme refactor, TalkBack accessibility, haptic feedback, animated transitions, custom typography, celebration animations"
+  expanded_description: >
+    Transform SumGrid from a functional puzzle app into a premium daily ritual through four
+    phases of targeted visual polish, accessibility fixes, and tactile feedback. Work is
+    organized as mandatory technical-debt cleanup (S00) followed by three incremental
+    quality sprints (S01-S03). Each sprint boundary is a natural releasable increment.
+    Stack: Kotlin + Jetpack Compose + Material3. minSdk 24. APK hard cap 4.5MB (~3.5MB
+    current, ~1MB headroom). 552 passing tests must remain green throughout.
+  success_criteria:
+    - "GridRenderer renders correctly in both light and dark mode using MaterialTheme tokens — zero hardcoded color constants"
+    - "TalkBack can announce every grid cell: row, column, value, given/editable state"
+    - "CelebrationAnimation plays on puzzle completion (currently wired to nothing)"
+    - "Haptic feedback fires on cell tap, number entry, clear action, and puzzle completion"
+    - "Screen transitions use fade+slide via AnimatedNavHost — no bare NavHost usage"
+    - "Outfit Variable font replaces Roboto in Type.kt; APK growth <=110KB"
+    - "Predictive back gesture enabled in manifest and Compose Navigation"
+    - "Expanded Material3 palette (~30 tokens): tertiary, surface variants, tonal elevation"
+    - "Home and Puzzle screens have subtle vertical gradient backgrounds via Brush API"
+    - "Splash screen uses core-splashscreen library with branded SumGrid icon"
+    - "Streak counter animates scale-up on increment; flame icon pulses"
+    - "Dark mode uses OLED-optimized true darks with intentional elevated surfaces"
+    - "Cell selection: Canvas spring pulse (scale 1.0->1.05->1.0, 200ms spring)"
+    - "Sum indicator: correct sum = green pulse + checkmark scale-in; over = 3px shake 300ms"
+    - "Celebration is multi-phase: ripple wave + Canvas confetti particles + stats card slide-up"
+    - "Edge-to-edge polish: dynamic status bar coloring and proper insets handling"
+    - "APK stays under 4.5MB hard cap through all sprints"
+    - "Frame time <12ms on API 24 emulator for all animated paths"
+    - "Zero regressions in 552 existing tests; new behavior covered by tests"
+  constraints:
+    - "APK hard cap 4.5MB — kill criterion if exceeded (stop all work)"
+    - "Frame time <12ms on API 24 / 2GB RAM emulator — remove offending animation if exceeded"
+    - "No visual-only state information without TalkBack/accessibility parallel"
+    - "All animations must respect ANIMATOR_DURATION_SCALE system setting"
+    - "GridRenderer Canvas coordinate math MUST NOT be changed — color refactor only in S00"
+    - "No new library dependencies without explicit APK impact calculation"
+    - "minSdk 24 — APIs above 24 require compat wrappers"
+    - "Canvas-to-LazyGrid GridRenderer rewrite is out of scope — defer to separate ticket"
+    - "Phase 4 (theme variants, sound effects, stats dashboard) is out of scope for this epic"
+    - "If >5 dev days consumed before first releasable increment, ship what exists and stop"
+
+# === SPRINT INDEX ===
+# Epic-level sprint registry. Each sprint has its own domain-memory.yaml.
+sprints:
+  - id: "S00"
+    name: "Fix Technical Debt First"
+    description: "Unblock all theme work, fix the critical accessibility gap, and wire the dead CelebrationAnimation code. Day 1 work — mandatory regardless of whether Phase 2-3 proceed."
+    domain_memory: "sprints/S00/domain-memory.yaml"
+    status: "untested"
+    priority: 1
+    depends_on: []
+    features: ["S00-F001", "S00-F002", "S00-F003"]
+    ship_criteria: "GridRenderer uses theme tokens, TalkBack announces all cells, celebration fires on completion"
+
+  - id: "S01"
+    name: "Quick Wins"
+    description: "Maximum visual impact at zero APK cost: haptic feedback, animated nav transitions, Outfit custom font, predictive back gesture. Day 2-3 work."
+    domain_memory: "sprints/S01/domain-memory.yaml"
+    status: "untested"
+    priority: 2
+    depends_on: ["S00"]
+    features: ["S01-F001", "S01-F002", "S01-F003", "S01-F004"]
+    ship_criteria: "App feels noticeably more polished and responsive. APK under 4MB. All tests pass."
+
+  - id: "S02"
+    name: "Visual Identity"
+    description: "Establish distinctive premium visual language: expanded Material3 palette, gradient backgrounds, splash screen, animated streak counter, dark mode polish. Day 4-6 work."
+    domain_memory: "sprints/S02/domain-memory.yaml"
+    status: "untested"
+    priority: 3
+    depends_on: ["S00", "S01"]
+    features: ["S02-F001", "S02-F002", "S02-F003", "S02-F004", "S02-F005"]
+    ship_criteria: "SumGrid has a recognizable visual identity. Dark mode looks intentional. APK under 4.5MB."
+
+  - id: "S03"
+    name: "Gameplay Polish"
+    description: "Make every interaction feel intentional and rewarding: cell selection pulse, sum indicator animations, enhanced multi-phase celebration, edge-to-edge polish. Week 2 work."
+    domain_memory: "sprints/S03/domain-memory.yaml"
+    status: "untested"
+    priority: 4
+    depends_on: ["S00", "S01", "S02"]
+    features: ["S03-F001", "S03-F002", "S03-F003", "S03-F004"]
+    ship_criteria: "Completing a puzzle feels rewarding. No jank on API 24. Power users can disable via system setting."
+
+# === FEATURE BACKLOG (epic summary view) ===
+# Each sprint's domain-memory.yaml has the authoritative per-feature detail.
+# This section provides a cross-sprint flat index for quick lookup.
+features:
+  # S00 - Technical Debt
+  - id: "S00-F001"
+    name: "GridRenderer color refactor to theme tokens"
+    description: "Extract 9 hardcoded color constants (lines 30-38 of GridRenderer.kt) to MaterialTheme-derived parameters. Zero change to Canvas coordinate math. Prerequisite for all subsequent theme work."
+    status: "untested"
+    test_file: ""
+    impl_file: "app/src/main/java/com/sumgrid/ui/grid/GridRenderer.kt"
+    priority: 1
+    dependencies: []
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S00-F002"
+    name: "Grid TalkBack accessibility semantics"
+    description: "Add Modifier.semantics with cell-level contentDescription to Canvas-based grid. TalkBack must announce: 'Row N, Column M, value V, given/editable'. Critical accessibility fix."
+    status: "untested"
+    test_file: ""
+    impl_file: "app/src/main/java/com/sumgrid/ui/grid/GridRenderer.kt"
+    priority: 2
+    dependencies: []
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S00-F003"
+    name: "Wire CelebrationAnimation to PuzzleScreen"
+    description: "Connect existing CelebrationCellWrapper/CelebrationAnimation.kt to puzzle completion state in PuzzleScreen. Currently completely unwired — fires nothing on completion."
+    status: "untested"
+    test_file: ""
+    impl_file: "app/src/main/java/com/sumgrid/ui/puzzle/PuzzleScreen.kt"
+    priority: 3
+    dependencies: []
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  # S01 - Quick Wins
+  - id: "S01-F001"
+    name: "Haptic feedback"
+    description: "Add LocalHapticFeedback on cell tap, number entry, clear action, and puzzle completion. Compose built-in API, zero APK cost, available API 24+."
+    status: "untested"
+    test_file: ""
+    impl_file: ""
+    priority: 11
+    dependencies: ["S00-F001"]
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S01-F002"
+    name: "Animated screen transitions"
+    description: "Replace NavHost with AnimatedNavHost using enterTransition/exitTransition (fade + slide). Standard Compose Navigation API, zero APK cost."
+    status: "untested"
+    test_file: ""
+    impl_file: ""
+    priority: 12
+    dependencies: []
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S01-F003"
+    name: "Custom typography — Outfit Variable font"
+    description: "Bundle Outfit Variable font (~100KB OTF/TTF) in res/font/, update Type.kt to use it for all text styles replacing FontFamily.Default. Major visual identity lift."
+    status: "untested"
+    test_file: ""
+    impl_file: "app/src/main/java/com/sumgrid/ui/theme/Type.kt"
+    priority: 13
+    dependencies: []
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S01-F004"
+    name: "Predictive back gesture"
+    description: "Enable predictive back in AndroidManifest.xml (android:enableOnBackInvokedCallback=true) and update Compose Navigation accordingly. Modern Android platform fluency."
+    status: "untested"
+    test_file: ""
+    impl_file: "app/src/main/AndroidManifest.xml"
+    priority: 14
+    dependencies: []
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  # S02 - Visual Identity
+  - id: "S02-F001"
+    name: "Expanded tonal Material3 palette"
+    description: "Grow from 13 to ~30 Material3 color tokens in Color.kt and Theme.kt. Add tertiary, surface variants, tonal elevation tokens. Enables richer light/dark mode expressions."
+    status: "untested"
+    test_file: ""
+    impl_file: "app/src/main/java/com/sumgrid/ui/theme/Color.kt"
+    priority: 21
+    dependencies: ["S00-F001"]
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S02-F002"
+    name: "Gradient backgrounds"
+    description: "Subtle vertical gradient backgrounds on Home and Puzzle screens using Brush.verticalGradient with theme colors. Zero APK cost, pure Compose Brush API."
+    status: "untested"
+    test_file: ""
+    impl_file: ""
+    priority: 22
+    dependencies: ["S00-F001", "S02-F001"]
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S02-F003"
+    name: "Splash screen"
+    description: "Branded splash screen using androidx.core:core-splashscreen library (~20KB) with SumGrid icon. Replaces legacy windowBackground theme approach. Clean API 31+ experience with compat."
+    status: "untested"
+    test_file: ""
+    impl_file: ""
+    priority: 23
+    dependencies: []
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S02-F004"
+    name: "Animated streak counter"
+    description: "Scale-up animation on streak number increment + flame icon pulse using Compose Animatable. Zero APK cost, reinforces daily habit loop."
+    status: "untested"
+    test_file: ""
+    impl_file: ""
+    priority: 24
+    dependencies: []
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S02-F005"
+    name: "Dark mode OLED polish"
+    description: "OLED-optimized true darks (near-black backgrounds), elevated surfaces use tonal elevation not transparency, grid line luminosity tuned for dark. Part of expanded palette work."
+    status: "untested"
+    test_file: ""
+    impl_file: "app/src/main/java/com/sumgrid/ui/theme/Color.kt"
+    priority: 25
+    dependencies: ["S02-F001"]
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  # S03 - Gameplay Polish
+  - id: "S03-F001"
+    name: "Cell selection animation"
+    description: "Canvas-internal spring pulse on selected cell: scale 1.0->1.05->1.0 over 200ms with amber glow using Compose Animatable inside DrawScope. Must respect ANIMATOR_DURATION_SCALE."
+    status: "untested"
+    test_file: ""
+    impl_file: "app/src/main/java/com/sumgrid/ui/grid/GridRenderer.kt"
+    priority: 41
+    dependencies: ["S00-F001"]
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S03-F002"
+    name: "Sum indicator animations"
+    description: "Correct sum: green pulse + checkmark scale-in animation. Over sum: subtle 3px shake over 300ms. Both Canvas-internal via Animatable. Makes feedback viscerally clear."
+    status: "untested"
+    test_file: ""
+    impl_file: ""
+    priority: 42
+    dependencies: ["S03-F001"]
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S03-F003"
+    name: "Enhanced celebration animation"
+    description: "Multi-phase celebration: (1) ripple wave expanding from grid center, (2) Canvas confetti particles (drawn, not Lottie), (3) stats card slide-up. Evaluate Canvas sufficiency before considering Lottie."
+    status: "untested"
+    test_file: ""
+    impl_file: "app/src/main/java/com/sumgrid/ui/celebration/CelebrationAnimation.kt"
+    priority: 43
+    dependencies: ["S00-F003"]
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+  - id: "S03-F004"
+    name: "Edge-to-edge polish"
+    description: "Dynamic status bar coloring, proper window insets handling using WindowInsetsController. enableEdgeToEdge() is already called — this completes the visual treatment."
+    status: "untested"
+    test_file: ""
+    impl_file: ""
+    priority: 44
+    dependencies: []
+    domain: "frontend"
+    last_attempt:
+      timestamp: null
+      agent: null
+      result: null
+      error: null
+    attempts: []
+
+# === PROGRESS LOG ===
+log:
+  - timestamp: "2026-03-14T04:30:39Z"
+    agent: "initializer"
+    action: "expanded_goal"
+    feature_id: null
+    result: "Initialized epic domain memory with 4 sprints (S00-S03) and 16 features across all sprints"
+    duration_ms: 0
+
+tried: {}
+
+# === CURRENT FOCUS ===
+current:
+  sprint_id: null
+  feature_id: null
+  started_at: null
+  status: "idle"
+
+# === TEST SUMMARY ===
+tests:
+  total: 552
+  passing: 552
+  failing: 0
+  skipped: 0
+  last_run: null
+  command: "./gradlew test"
+  coverage: null
+
+# === METADATA ===
+metadata:
+  workflow_type: "epic"
+  parent_epic: null
+  sprint_id: null
+  source: "initializer"
+  migration_date: null
+  roadmap_source: "sessions/2026-03-14_sumgrid-ui-modernization/roadmap.md"
+  tech_stack: "Kotlin + Jetpack Compose + Material3, Android minSdk 24"
+  apk_budget_mb: 4.5
+  apk_current_mb: 3.5
+  apk_headroom_mb: 1.0
+  kill_criteria:
+    - "APK exceeds 4.5MB"
+    - "Frame time >12ms on API 24 emulator"
+    - "Any visual-only state info without accessibility parallel"
+    - "More than 5 dev days before first releasable increment"
+    - "GridRenderer needs full Canvas-to-LazyGrid rewrite"
