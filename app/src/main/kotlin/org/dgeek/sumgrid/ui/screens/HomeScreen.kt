@@ -71,6 +71,8 @@ import org.dgeek.sumgrid.viewmodel.HomeViewModel
 fun HomeScreen(
     vm: HomeViewModel,
     onStartPuzzle: (Difficulty) -> Unit,
+    onOpenStats: () -> Unit = {},
+    onStartPractice: (Difficulty) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val state by vm.uiState.collectAsState()

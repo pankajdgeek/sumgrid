@@ -21,6 +21,8 @@ class InMemoryCompletionStore : CompletionStore {
 
     override suspend fun get(key: String): CompletionState? = store[key]
 
+    override suspend fun getAll(): Map<String, CompletionState> = store.toMap()
+
     private val inProgress = mutableMapOf<String, IntArray>()
 
     override suspend fun saveInProgress(key: String, values: IntArray) {

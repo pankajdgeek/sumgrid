@@ -2,6 +2,7 @@ package org.dgeek.sumgrid.navigation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -60,8 +61,13 @@ private object Routes {
     const val HOME = "home"
     const val PUZZLE = "puzzle/{difficulty}"
     const val ONBOARDING = "onboarding"
+    /** Stats overview screen. */
+    const val STATS = "stats"
+    /** Practice mode with a chosen difficulty. */
+    const val PRACTICE = "practice/{difficulty}"
 
     fun puzzle(difficulty: Difficulty): String = "puzzle/${difficulty.name}"
+    fun practice(difficulty: Difficulty): String = "practice/${difficulty.name}"
 }
 
 // ---------------------------------------------------------------------------
@@ -168,6 +174,12 @@ fun SumGridNavHost(
                 vm = homeVm,
                 onStartPuzzle = { difficulty ->
                     navController.navigate(Routes.puzzle(difficulty))
+                },
+                onOpenStats = {
+                    navController.navigate(Routes.STATS)
+                },
+                onStartPractice = { difficulty ->
+                    navController.navigate(Routes.practice(difficulty))
                 }
             )
         }
@@ -199,6 +211,23 @@ fun SumGridNavHost(
                 onBack = { navController.popBackStack() },
                 puzzleDate = LocalDate.now(ZoneId.systemDefault())
             )
+        }
+
+        // ── Stats ───────────────────────────────────────────────────────
+        composable(Routes.STATS) {
+            // TODO: Wire StatsScreen once implemented (T016)
+            Text("Stats — coming soon")
+        }
+
+        // ── Practice ────────────────────────────────────────────────────
+        composable(
+            route = Routes.PRACTICE,
+            arguments = listOf(
+                navArgument("difficulty") { type = NavType.StringType }
+            )
+        ) {
+            // TODO: Wire PracticeScreen once implemented (T020)
+            Text("Practice — coming soon")
         }
     }
 }

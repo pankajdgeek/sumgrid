@@ -11,6 +11,8 @@ package org.dgeek.sumgrid.daily
 interface CompletionStore {
     suspend fun save(key: String, state: CompletionState)
     suspend fun get(key: String): CompletionState?
+    /** Return all completion entries (keys starting with "completion_"). */
+    suspend fun getAll(): Map<String, CompletionState> = emptyMap()
 
     /** Save in-progress puzzle state (flattened userValues array). */
     suspend fun saveInProgress(key: String, values: IntArray) {}

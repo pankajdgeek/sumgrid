@@ -29,6 +29,26 @@ class DataStoreCompletionStore(
         }
     }
 
+    override suspend fun getAll(): Map<String, CompletionState> {
+        val prefs = dataStore.data.first()
+        val result = mutableMapOf<String, CompletionState>()
+        // Scan for all "_completed" boolean keys
+        prefs.asMap().forEach { (prefKey, value) ->
+            val name = prefKey.name
+            if (name.endsWith("_completed") && value == true) {
+                val baseKey = name.removeSuffix("_completed")
+                val elapsed = prefs[longPreferencesKey("${baseKey}_elapsed")] ?: 0L
+                val completedAt = prefs[longPreferencesKey("${baseKey}_at")] ?: 0L
+                result[baseKey] = CompletionState(
+                    completed = true,
+                    elapsedMillis = elapsed,
+                    completedAt = completedAt
+                )
+            }
+        }
+        return result
+    }
+
     override suspend fun get(key: String): CompletionState? {
         val prefs = dataStore.data.first()
         val completed = prefs[booleanPreferencesKey("${key}_completed")] ?: return null
