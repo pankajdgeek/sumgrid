@@ -174,6 +174,27 @@ fun PuzzleScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 // ── Grid + celebration overlay ──────────────────────────────
+                // Compute first empty (non-given, value == 0) cell for onboarding pulse.
+                // Stop pulsing once the player has made their first move (selectedCell != null
+                // acts as a proxy for "interaction started").
+                val firstEmptyCell: Pair<Int, Int>? = if (currentState.selectedCell == null && !vm.timerStarted) {
+                    val n = currentState.puzzle.size
+                    var found: Pair<Int, Int>? = null
+                    outer@ for (r in 0 until n) {
+                        for (c in 0 until n) {
+                            if (!currentState.puzzle.cells[r][c].isGiven &&
+                                currentState.userValues[r][c] == 0
+                            ) {
+                                found = r to c
+                                break@outer
+                            }
+                        }
+                    }
+                    found
+                } else {
+                    null
+                }
+
                 Box(modifier = Modifier.fillMaxWidth()) {
                     GridRenderer(
                         state       = currentState,
@@ -183,7 +204,7 @@ fun PuzzleScreen(
                         },
                         modifier    = Modifier.fillMaxWidth(),
                         outerPaddingDp = 4f,
-                        pulsingCell = null
+                        pulsingCell = firstEmptyCell
                     )
 
                     // Celebration overlay — visible only when puzzle is complete

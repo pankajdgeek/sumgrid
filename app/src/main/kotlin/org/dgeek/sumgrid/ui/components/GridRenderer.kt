@@ -1,7 +1,12 @@
 package org.dgeek.sumgrid.ui.components
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -128,7 +133,7 @@ fun GridRenderer(
     onCellTap: (row: Int, col: Int) -> Unit,
     modifier: Modifier = Modifier,
     outerPaddingDp: Float = 16f,
-    // Stub for Sprint 2C pulse animation (T030 will wire this)
+    // When non-null, an infinite scale/alpha pulse is drawn on this cell as an onboarding cue
     pulsingCell: Pair<Int, Int>? = null
 ) {
     val textMeasurer = rememberTextMeasurer()
@@ -141,6 +146,27 @@ fun GridRenderer(
         targetValue = if (hasSelection) 1.05f else 1.0f,
         animationSpec = spring(dampingRatio = 0.4f, stiffness = 800f),
         label = "selectionScale"
+    )
+
+    // Pulse animation for first-empty-cell onboarding cue (S2C-F006)
+    val pulseTransition = rememberInfiniteTransition(label = "firstCellPulse")
+    val pulseScale by pulseTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 1.08f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 600),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseScale"
+    )
+    val pulseAlpha by pulseTransition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 600),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseAlpha"
     )
 
     BoxWithConstraints(
@@ -181,7 +207,10 @@ fun GridRenderer(
                 cellSize = cellSize,
                 textMeasurer = textMeasurer,
                 colors = colors,
-                selectionScale = selectionScale
+                selectionScale = selectionScale,
+                pulsingCell = pulsingCell,
+                pulseScale = pulseScale,
+                pulseAlpha = pulseAlpha
             )
         }
 
@@ -216,7 +245,10 @@ private fun DrawScope.drawGrid(
     cellSize: Float,
     textMeasurer: TextMeasurer,
     colors: GridColors,
-    selectionScale: Float = 1f
+    selectionScale: Float = 1f,
+    pulsingCell: Pair<Int, Int>? = null,
+    pulseScale: Float = 1f,
+    pulseAlpha: Float = 1f
 ) {
     // ── Cell backgrounds ────────────────────────────────────────────────────
     for (r in 0 until n) {
@@ -242,6 +274,18 @@ private fun DrawScope.drawGrid(
                     topLeft = Offset(c * cellSize - offset, r * cellSize - offset),
                     size    = Size(scaledSize, scaledSize),
                     style   = Stroke(width = 4f)
+                )
+            }
+
+            // Pulsing cell — onboarding cue for first empty cell (S2C-F006)
+            if (pulsingCell != null && pulsingCell == r to c && !isSelected) {
+                val scaledSize = cellSize * pulseScale
+                val offset = (scaledSize - cellSize) / 2f
+                drawRect(
+                    color = colors.selectedBorder.copy(alpha = pulseAlpha),
+                    topLeft = Offset(c * cellSize - offset, r * cellSize - offset),
+                    size    = Size(scaledSize, scaledSize),
+                    style   = Stroke(width = 3f)
                 )
             }
         }
