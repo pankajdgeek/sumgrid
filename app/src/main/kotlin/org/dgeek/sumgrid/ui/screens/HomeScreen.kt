@@ -37,9 +37,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.painterResource
@@ -388,22 +390,31 @@ private fun BadgeItem(
     onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val alpha = if (earned) 1f else 0.38f
     val label = if (earned) "${badge.displayName} — Earned" else "${badge.displayName} — Locked"
     Column(
         modifier = modifier
             .clickable(onClick = onClick)
-            .alpha(alpha)
             .padding(4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = badge.icon,
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.semantics {
-                contentDescription = label
+        // Wrap emoji in a Box with graphicsLayer: unearned badges get reduced alpha AND
+        // full desaturation via ColorMatrix.setToSaturation(0f) to appear grayscale/locked.
+        Box(
+            modifier = Modifier.graphicsLayer {
+                alpha = if (earned) 1f else 0.38f
+                colorFilter = if (earned) null else ColorFilter.colorMatrix(
+                    ColorMatrix().apply { setToSaturation(0f) }
+                )
             }
-        )
+        ) {
+            Text(
+                text = badge.icon,
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.semantics {
+                    contentDescription = label
+                }
+            )
+        }
         // displayName text label intentionally removed — emoji-only display per S2A-F002
     }
 }
