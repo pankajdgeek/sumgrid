@@ -20,7 +20,7 @@ import java.time.LocalDate
  *  - longestStreak = max(longestStreak, currentStreak) after every update
  *  - Earned badges are accumulated and never removed
  */
-class StreakRepository(private val dataStore: DataStore<Preferences>) {
+class StreakRepository(private val dataStore: DataStore<Preferences>) : StreakDataSource {
 
     private object Keys {
         val CURRENT_STREAK = intPreferencesKey("streak_current")
@@ -30,8 +30,7 @@ class StreakRepository(private val dataStore: DataStore<Preferences>) {
         val EARNED_BADGES = stringPreferencesKey("streak_badges")
     }
 
-    /** Continuous stream of the current streak state. */
-    val streakState: Flow<StreakState> = dataStore.data.map { prefs ->
+    override val streakState: Flow<StreakState> = dataStore.data.map { prefs ->
         val current = prefs[Keys.CURRENT_STREAK] ?: 0
         val longest = prefs[Keys.LONGEST_STREAK] ?: 0
         val dateStr = prefs[Keys.LAST_COMPLETION_DATE]
@@ -45,7 +44,7 @@ class StreakRepository(private val dataStore: DataStore<Preferences>) {
      * Records a daily puzzle completion for the given [date].
      * This is idempotent for the same calendar day.
      */
-    suspend fun recordCompletion(date: LocalDate) {
+    override suspend fun recordCompletion(date: LocalDate) {
         dataStore.edit { prefs ->
             val lastDateStr = prefs[Keys.LAST_COMPLETION_DATE]
             val lastDate = lastDateStr?.let { LocalDate.parse(it) }

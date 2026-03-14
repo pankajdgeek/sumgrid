@@ -84,6 +84,14 @@ class OnboardingViewModel(
     }
 
     /**
+     * Skip onboarding entirely. Marks onboarding as complete without
+     * requiring the user to finish all 3 puzzles.
+     */
+    suspend fun skipOnboarding() {
+        markComplete()
+    }
+
+    /**
      * Initialise state from the repository without advancing the launch count.
      * Call this on ViewModel creation to reflect any pre-existing persisted state.
      */

@@ -11,18 +11,17 @@ import java.time.LocalDate
  * MutableStateFlow instead of DataStore. Used in unit tests to avoid the Android
  * DataStore dependency (which requires a real Context).
  */
-class InMemoryStreakRepository {
+class InMemoryStreakRepository : StreakDataSource {
 
     private val _state = MutableStateFlow(StreakState())
 
-    /** Continuous stream of the current streak state. */
-    val streakState: Flow<StreakState> get() = _state
+    override val streakState: Flow<StreakState> get() = _state
 
     /**
      * Records a daily puzzle completion for [date].
      * Applies the same streak rules as [StreakRepository.recordCompletion].
      */
-    suspend fun recordCompletion(date: LocalDate) {
+    override suspend fun recordCompletion(date: LocalDate) {
         val current = _state.value
 
         // No-op if already counted today

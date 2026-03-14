@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -37,12 +39,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import org.dgeek.sumgrid.engine.models.Difficulty
+import org.dgeek.sumgrid.streak.StreakBadge
 import org.dgeek.sumgrid.ui.components.DifficultySelector
 import org.dgeek.sumgrid.viewmodel.HomeViewModel
 
@@ -104,6 +109,7 @@ fun HomeScreen(
                     )
                 )
                 .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -127,6 +133,11 @@ fun HomeScreen(
 
             // ── Streak ────────────────────────────────────────────────────
             StreakDisplay(streak = state.currentStreak)
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ── Badges ──────────────────────────────────────────────────
+            BadgeRow(earnedBadges = state.earnedBadges)
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -181,24 +192,28 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // ── Play button ───────────────────────────────────────────────
-            Button(
-                onClick = {
-                    selectedDifficulty?.let { onStartPuzzle(it) }
-                },
-                enabled = selectedDifficulty != null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
-            ) {
-                Text(
-                    text = "Play",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
+            // ── Play button or All-done state ────────────────────────────
+            if (state.allComplete) {
+                AllDoneSection()
+            } else {
+                Button(
+                    onClick = {
+                        selectedDifficulty?.let { onStartPuzzle(it) }
+                    },
+                    enabled = selectedDifficulty != null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                ) {
+                    Text(
+                        text = "Play",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // ── Footer ─────────────────────────────────────────────────────
             Text(
@@ -329,5 +344,76 @@ private fun CountdownDisplay(countdown: String, modifier: Modifier = Modifier) {
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
         )
+    }
+}
+
+@Composable
+private fun BadgeRow(
+    earnedBadges: Set<StreakBadge>,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        StreakBadge.entries.forEach { badge ->
+            val earned = badge in earnedBadges
+            BadgeItem(badge = badge, earned = earned)
+        }
+    }
+}
+
+@Composable
+private fun BadgeItem(badge: StreakBadge, earned: Boolean, modifier: Modifier = Modifier) {
+    val alpha = if (earned) 1f else 0.38f
+    val label = if (earned) "${badge.displayName} — Earned" else "${badge.displayName} — Locked"
+    Column(
+        modifier = modifier
+            .alpha(alpha)
+            .padding(4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = badge.icon,
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.semantics {
+                contentDescription = label
+            }
+        )
+        Text(
+            text = badge.displayName,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun AllDoneSection(modifier: Modifier = Modifier) {
+    Surface(
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        shape = MaterialTheme.shapes.medium,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "All done for today! \uD83C\uDF89",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Come back tomorrow for new puzzles.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }

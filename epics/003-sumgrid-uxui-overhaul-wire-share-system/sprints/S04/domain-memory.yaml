@@ -1,0 +1,85 @@
+# Domain Memory v1.0 — Sprint S04: Polish & Accessibility
+# Epic: 003-sumgrid-uxui-overhaul-wire-share-system
+version: "1.0"
+created: "2026-03-14T10:30:00Z"
+last_updated: "2026-03-14T10:30:00Z"
+
+goal:
+  original_prompt: "Sprint 4 — Polish & Accessibility: reduce motion, error animation, pencil mode, landscape, TalkBack, Hard/Expert difficulties"
+
+features:
+  - id: "S04-F001"
+    name: "Reduce motion support"
+    status: "pending"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/ui/ReduceMotionTest.kt"
+    impl_files:
+      - "app/src/main/kotlin/org/dgeek/sumgrid/ui/screens/HomeScreen.kt"
+      - "app/src/main/kotlin/org/dgeek/sumgrid/ui/components/GridRenderer.kt"
+    task_id: "T022"
+    deps: []
+
+  - id: "S04-F002"
+    name: "Error indicator animation"
+    status: "pending"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/ui/ErrorAnimationTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/components/GridRenderer.kt"
+    task_id: "T023"
+    deps: []
+
+  - id: "S04-F003"
+    name: "Pencil/notes mode"
+    status: "pending"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/viewmodel/PencilModeTest.kt"
+    impl_files:
+      - "app/src/main/kotlin/org/dgeek/sumgrid/viewmodel/PuzzleViewModel.kt"
+      - "app/src/main/kotlin/org/dgeek/sumgrid/ui/components/GridRenderer.kt"
+      - "app/src/main/kotlin/org/dgeek/sumgrid/ui/components/NumberPad.kt"
+    task_id: "T024"
+    deps: ["S02-F002"]
+
+  - id: "S04-F004"
+    name: "Landscape layout or portrait lock"
+    status: "pending"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/ui/LandscapeTest.kt"
+    impl_file: "app/src/main/AndroidManifest.xml"
+    task_id: "T025"
+    deps: []
+
+  - id: "S04-F005"
+    name: "TalkBack focus ordering"
+    status: "pending"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/ui/TalkBackOrderTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/screens/PuzzleScreen.kt"
+    task_id: "T026"
+    deps: []
+
+  - id: "S04-F006"
+    name: "Hard & Expert difficulty levels"
+    status: "pending"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/engine/DifficultyTest.kt"
+    impl_files:
+      - "app/src/main/kotlin/org/dgeek/sumgrid/engine/models/Difficulty.kt"
+      - "app/src/main/kotlin/org/dgeek/sumgrid/engine/PuzzleGenerator.kt"
+    task_id: "T027"
+    deps: ["S02-F003"]
+
+current:
+  feature_id: null
+  started_at: null
+  status: "idle"
+
+tests:
+  total: 0
+  passing: 0
+  failing: 0
+  skipped: 0
+  last_run: null
+  command: "./gradlew :app:testDebugUnitTest"
+
+metadata:
+  workflow_type: "sprint"
+  parent_epic: "003-sumgrid-uxui-overhaul-wire-share-system"
+  sprint_id: "S04"
+  source: "orchestrator"
+  depends_on_sprints: ["S01", "S02", "S03"]
+  ship_criteria: "Animations respect reduce-motion. Error sums shake. Pencil mode works. Portrait locked or landscape layout. TalkBack traversal correct. Hard/Expert playable."

@@ -1,0 +1,97 @@
+# Domain Memory v1.0 — Sprint S01: Quick Wins & Critical Fixes
+# Epic: 003-sumgrid-uxui-overhaul-wire-share-system
+version: "1.0"
+created: "2026-03-14T10:30:00Z"
+last_updated: "2026-03-14T14:00:00Z"
+
+goal:
+  original_prompt: "Sprint 1 — Quick Wins: wire share button, display badges, skip onboarding, rules explanation, back button, scrollable home, all-done state"
+
+features:
+  - id: "S01-F000"
+    name: "Fix StreakRepository injection in HomeViewModel (BLOCKER)"
+    status: "passing"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/streak/StreakDataSourceTest.kt"
+    impl_files:
+      - "app/src/main/kotlin/org/dgeek/sumgrid/streak/StreakDataSource.kt"
+      - "app/src/main/kotlin/org/dgeek/sumgrid/viewmodel/HomeViewModel.kt"
+      - "app/src/main/kotlin/org/dgeek/sumgrid/navigation/SumGridNavigation.kt"
+    task_id: "T001"
+    deps: []
+
+  - id: "S01-F001"
+    name: "Wire share button on PuzzleScreen completion"
+    status: "passing"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/ui/PuzzleScreenTopBarTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/screens/PuzzleScreen.kt"
+    task_id: "T002"
+    deps: []
+
+  - id: "S01-F005"
+    name: "Back/exit button TopAppBar on PuzzleScreen"
+    status: "passing"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/ui/PuzzleScreenTopBarTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/screens/PuzzleScreen.kt"
+    task_id: "T003"
+    deps: ["T002"]
+
+  - id: "S01-F002"
+    name: "Display earned streak badges on HomeScreen"
+    status: "passing"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/viewmodel/HomeViewModelBadgeTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/screens/HomeScreen.kt"
+    task_id: "T004"
+    deps: ["T001"]
+
+  - id: "S01-F006"
+    name: "Make HomeScreen scrollable"
+    status: "passing"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/ui/HomeScreenLayoutTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/screens/HomeScreen.kt"
+    task_id: "T005"
+    deps: ["T001"]
+
+  - id: "S01-F007"
+    name: "All-done state for HomeScreen"
+    status: "passing"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/ui/HomeScreenLayoutTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/screens/HomeScreen.kt"
+    task_id: "T006"
+    deps: ["T005"]
+
+  - id: "S01-F003"
+    name: "Skip option in onboarding"
+    status: "passing"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/viewmodel/OnboardingSkipTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/screens/OnboardingScreen.kt"
+    task_id: "T007"
+    deps: []
+
+  - id: "S01-F004"
+    name: "Rules explanation overlay in onboarding"
+    status: "passing"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/ui/OnboardingScreenUiTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/screens/OnboardingScreen.kt"
+    task_id: "T008"
+    deps: ["T007"]
+
+current:
+  feature_id: null
+  started_at: null
+  status: "idle"
+
+tests:
+  total: 385
+  passing: 385
+  failing: 0
+  skipped: 0
+  last_run: "2026-03-14T14:00:00Z"
+  command: "./gradlew :app:testDebugUnitTest"
+
+metadata:
+  workflow_type: "sprint"
+  parent_epic: "003-sumgrid-uxui-overhaul-wire-share-system"
+  sprint_id: "S01"
+  source: "orchestrator"
+  depends_on_sprints: []
+  ship_criteria: "Share button visible on completion. Badges shown on HomeScreen. Onboarding skippable with rules. Back button on PuzzleScreen. HomeScreen scrolls."

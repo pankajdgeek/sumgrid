@@ -8,9 +8,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -23,11 +31,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.zIndex
+import org.dgeek.sumgrid.share.ShareCardGenerator
+import org.dgeek.sumgrid.share.shareResult
 import org.dgeek.sumgrid.ui.components.CelebrationCellWrapper
 import org.dgeek.sumgrid.ui.components.GridRenderer
 import org.dgeek.sumgrid.ui.components.NumberPad
@@ -46,13 +59,17 @@ import org.dgeek.sumgrid.viewmodel.PuzzleViewModel
  * The timer is driven by a [LaunchedEffect] coroutine that ticks every second
  * as long as the puzzle is not yet complete.
  */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun PuzzleScreen(
     vm: PuzzleViewModel = viewModel(),
+    onBack: (() -> Unit)? = null,
+    puzzleDate: java.time.LocalDate? = null,
     modifier: Modifier = Modifier
 ) {
     val state by vm.uiState.collectAsState()
     val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
 
     // Fire haptic on puzzle completion
     LaunchedEffect(state?.isCompleted) {
@@ -71,7 +88,34 @@ fun PuzzleScreen(
         }
     }
 
-    Scaffold(modifier = modifier.fillMaxSize()) { innerPadding ->
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = state?.puzzle?.difficulty?.name
+                            ?.lowercase()
+                            ?.replaceFirstChar { it.uppercaseChar() }
+                            ?: ""
+                    )
+                },
+                navigationIcon = {
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Navigate back"
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0f)
+                )
+            )
+        }
+    ) { innerPadding ->
         val currentState = state
 
         if (currentState == null) {
@@ -150,7 +194,7 @@ fun PuzzleScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // ── Completion banner ────────────────────────────────────────────
+            // ── Completion banner + share ──────────────────────────────────────
             if (currentState.isCompleted) {
                 Text(
                     text      = "Puzzle complete! \uD83C\uDF89",
@@ -162,6 +206,31 @@ fun PuzzleScreen(
                     fontWeight = FontWeight.Bold,
                     color     = MaterialTheme.colorScheme.primary
                 )
+
+                val onShare = {
+                    val date = puzzleDate ?: java.time.LocalDate.now()
+                    val shareText = ShareCardGenerator.generate(
+                        puzzle = currentState.puzzle,
+                        elapsedMillis = vm.elapsedMillis,
+                        date = date
+                    )
+                    shareResult(context, shareText)
+                }
+
+                OutlinedButton(
+                    onClick = onShare,
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(bottom = 8.dp)
+                        .semantics { contentDescription = "Share your result" }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Share,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text("Share")
+                }
             }
 
             // ── Number pad ───────────────────────────────────────────────────

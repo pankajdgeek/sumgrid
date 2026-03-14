@@ -47,7 +47,7 @@ private class HomeViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return HomeViewModel(
             puzzleRepository = container.dailyPuzzleRepository,
-            streakRepository = container.inMemoryStreakRepository
+            streakRepository = container.streakRepository
         ) as T
     }
 }
@@ -194,7 +194,11 @@ fun SumGridNavHost(
                 puzzleVm.loadPuzzle(puzzle, today)
             }
 
-            PuzzleScreen(vm = puzzleVm)
+            PuzzleScreen(
+                vm = puzzleVm,
+                onBack = { navController.popBackStack() },
+                puzzleDate = LocalDate.now(ZoneId.systemDefault())
+            )
         }
     }
 }

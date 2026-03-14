@@ -9,7 +9,8 @@ import kotlinx.coroutines.launch
 import org.dgeek.sumgrid.daily.CompletionState
 import org.dgeek.sumgrid.daily.DailyPuzzleRepository
 import org.dgeek.sumgrid.engine.models.Difficulty
-import org.dgeek.sumgrid.streak.InMemoryStreakRepository
+import org.dgeek.sumgrid.streak.StreakBadge
+import org.dgeek.sumgrid.streak.StreakDataSource
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
@@ -39,6 +40,10 @@ data class HomeUiState(
     val currentStreak: Int = 0,
     /** Seconds until midnight local time (when new puzzles become available). */
     val secondsUntilMidnight: Long = 0L,
+    /** Streak badges earned by the player. */
+    val earnedBadges: Set<StreakBadge> = emptySet(),
+    /** Whether all daily puzzles (all difficulties) are complete for today. */
+    val allComplete: Boolean = false,
     /** Whether the home screen data has finished loading. */
     val isLoading: Boolean = true
 )
@@ -63,7 +68,7 @@ data class HomeUiState(
  */
 class HomeViewModel(
     private val puzzleRepository: DailyPuzzleRepository,
-    private val streakRepository: InMemoryStreakRepository,
+    private val streakRepository: StreakDataSource,
     private val clock: () -> LocalDate = { LocalDate.now(ZoneId.systemDefault()) }
 ) : ViewModel() {
 
@@ -90,8 +95,12 @@ class HomeViewModel(
                 val completion = puzzleRepository.getCompletionState(today, difficulty)
                 PuzzleStatus(difficulty = difficulty, completionState = completion)
             }
+            val allComplete = Difficulty.entries.all { d ->
+                statuses.first { it.difficulty == d }.isCompleted
+            }
             _uiState.value = _uiState.value.copy(
                 puzzleStatuses = statuses,
+                allComplete = allComplete,
                 secondsUntilMidnight = secondsUntilMidnight(),
                 isLoading = false
             )
@@ -106,7 +115,8 @@ class HomeViewModel(
         viewModelScope.launch {
             streakRepository.streakState.collect { state ->
                 _uiState.value = _uiState.value.copy(
-                    currentStreak = state.currentStreak
+                    currentStreak = state.currentStreak,
+                    earnedBadges = state.earnedBadges
                 )
             }
         }
