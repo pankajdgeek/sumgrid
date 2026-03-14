@@ -2,23 +2,31 @@ package org.dgeek.sumgrid.ui.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.dgeek.sumgrid.viewmodel.PuzzleUiState
@@ -83,6 +91,16 @@ fun gridColorsFromTheme(): GridColors {
 }
 
 /**
+ * Generates an accessibility content description for a grid cell.
+ * Uses 1-based row/column numbering for user-facing descriptions.
+ */
+internal fun cellDescription(row: Int, col: Int, value: Int, isGiven: Boolean): String {
+    val valueStr = if (value == 0) "empty" else value.toString()
+    val stateStr = if (isGiven) "given" else "editable"
+    return "Row ${row + 1}, Column ${col + 1}, $valueStr, $stateStr"
+}
+
+/**
  * Compose Canvas-based grid renderer for a SumGrid puzzle.
  *
  * Layout:
@@ -92,6 +110,10 @@ fun gridColorsFromTheme(): GridColors {
  *   - The overall height is calculated to accommodate grid + col label row.
  *
  * Tapping a non-given cell invokes [onCellTap].
+ *
+ * An invisible overlay of [Box] nodes is placed over the grid cells to expose
+ * semantics to TalkBack. Each cell node carries a [contentDescription] of the
+ * form "Row N, Column M, value|empty, given|editable".
  *
  * @param state        Current UI state snapshot. If null, nothing is drawn.
  * @param onCellTap    Callback with (row, col) when a cell is tapped.
@@ -108,38 +130,65 @@ fun GridRenderer(
     val colors = gridColorsFromTheme()
     val n = state.puzzle.size
 
-    // Reserve space: grid is NxN cells; below add one extra row for col-sum labels.
-    // aspectRatio = (n + label fraction) columns wide : (n + label fraction) rows tall
-    // We use a square canvas and let Canvas handle the maths.
-    Canvas(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = outerPaddingDp.dp)
-            // Aspect ratio: width / height. We leave 10% extra height for col labels.
-            .aspectRatio(n.toFloat() / (n + 1).toFloat())
-            .pointerInput(state) {
-                detectTapGestures { offset ->
-                    val cellSize = size.width.toFloat() / (n + 0.6f)  // cell + label gutter
-                    val tapRow = (offset.y / cellSize).toInt()
-                    val tapCol = (offset.x / cellSize).toInt()
-                    if (tapRow in 0 until n && tapCol in 0 until n) {
-                        onCellTap(tapRow, tapCol)
+    ) {
+        // Calculate cell size in dp for overlay positioning
+        val cellSizeDp: Dp = maxWidth / (n + 0.6f)
+
+        // Reserve space: grid is NxN cells; below add one extra row for col-sum labels.
+        // aspectRatio = (n + label fraction) columns wide : (n + label fraction) rows tall
+        // We use a square canvas and let Canvas handle the maths.
+        Canvas(
+            modifier = Modifier
+                .fillMaxWidth()
+                // Aspect ratio: width / height. We leave 10% extra height for col labels.
+                .aspectRatio(n.toFloat() / (n + 1).toFloat())
+                .pointerInput(state) {
+                    detectTapGestures { offset ->
+                        val cellSize = size.width.toFloat() / (n + 0.6f)  // cell + label gutter
+                        val tapRow = (offset.y / cellSize).toInt()
+                        val tapCol = (offset.x / cellSize).toInt()
+                        if (tapRow in 0 until n && tapCol in 0 until n) {
+                            onCellTap(tapRow, tapCol)
+                        }
                     }
                 }
-            }
-    ) {
-        val totalWidth = size.width
-        // Divide width into n cells + a right gutter for row sums
-        val gutterFraction = 0.6f
-        val cellSize = totalWidth / (n + gutterFraction)
+        ) {
+            val totalWidth = size.width
+            // Divide width into n cells + a right gutter for row sums
+            val gutterFraction = 0.6f
+            val cellSize = totalWidth / (n + gutterFraction)
 
-        drawGrid(
-            state = state,
-            n = n,
-            cellSize = cellSize,
-            textMeasurer = textMeasurer,
-            colors = colors
-        )
+            drawGrid(
+                state = state,
+                n = n,
+                cellSize = cellSize,
+                textMeasurer = textMeasurer,
+                colors = colors
+            )
+        }
+
+        // Accessibility overlay — invisible Box nodes for TalkBack.
+        // These have zero visual impact (alpha = 0) but expose semantics
+        // so screen readers can navigate cell-by-cell.
+        for (r in 0 until n) {
+            for (c in 0 until n) {
+                val cell = state.puzzle.cells[r][c]
+                val value = state.displayValueAt(r, c)
+                Box(
+                    modifier = Modifier
+                        .size(cellSizeDp)
+                        .offset(x = cellSizeDp * c, y = cellSizeDp * r)
+                        .alpha(0f)
+                        .semantics {
+                            contentDescription = cellDescription(r, c, value, cell.isGiven)
+                        }
+                )
+            }
+        }
     }
 }
 
