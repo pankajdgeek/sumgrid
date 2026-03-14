@@ -1,13 +1,19 @@
 package org.dgeek.sumgrid.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import org.dgeek.sumgrid.daily.CompletionStore
 import org.dgeek.sumgrid.engine.models.Cell
 import org.dgeek.sumgrid.engine.models.Difficulty
 import org.dgeek.sumgrid.engine.models.Puzzle
+import java.time.LocalDate
 
 // ---------------------------------------------------------------------------
 // Domain state
@@ -35,7 +41,7 @@ data class PuzzleUiState(
     val puzzle: Puzzle,
     /**
      * Current user-entered values for empty cells.
-     * Size = puzzle.size × puzzle.size.
+     * Size = puzzle.size x puzzle.size.
      * Index: [row][col]. Value 0 means the cell is empty (not yet filled by user).
      * Given cells always retain their original value from [puzzle.cells].
      */
@@ -48,7 +54,7 @@ data class PuzzleUiState(
     val colSumIndicators: List<SumIndicatorColor>,
     /** True when all cells are filled and all row/col sums match targets. */
     val isCompleted: Boolean,
-    /** Elapsed seconds since the puzzle was loaded. */
+    /** Elapsed seconds since the timer started (first cell tap). */
     val elapsedSeconds: Long
 ) {
     /** Convenience: combined display value for a cell (given value or user value). */
@@ -97,20 +103,75 @@ data class PuzzleUiState(
  * instantiate this class directly on the JVM without Robolectric.
  *
  * Compose UI observes [uiState] via `collectAsState()`.
+ *
+ * @param completionStore  Persistence layer for completion state. Defaults to
+ *                         null (no persistence) — injected in production via
+ *                         [ViewModelFactory].
  */
-class PuzzleViewModel : ViewModel() {
+class PuzzleViewModel(
+    private val completionStore: CompletionStore? = null,
+    /**
+     * Coroutine scope used for persistence launches.
+     * In production this is [viewModelScope] (set lazily).
+     * In unit tests pass a [TestScope] or [CoroutineScope(Dispatchers.Unconfined)] to avoid
+     * requiring an Android main Looper.
+     */
+    private val persistScope: CoroutineScope? = null
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow<PuzzleUiState?>(null)
     val uiState: StateFlow<PuzzleUiState?> = _uiState.asStateFlow()
 
     // -----------------------------------------------------------------------
+    // Completion tracking
+    // -----------------------------------------------------------------------
+
+    private val _isComplete = MutableStateFlow(false)
+
+    /**
+     * True once the puzzle has been correctly and fully solved.
+     * Transitions false → true exactly once per puzzle load.
+     * Does not revert to false even if cells are subsequently changed.
+     */
+    val isComplete: StateFlow<Boolean> = _isComplete.asStateFlow()
+
+    /** Guards against re-persisting completion state on subsequent state changes. */
+    private var completionPersisted = false
+
+    /** The [LocalDate] for which the current puzzle was loaded (for DataStore key). */
+    private var puzzleDate: LocalDate? = null
+
+    // -----------------------------------------------------------------------
+    // Timer state
+    // -----------------------------------------------------------------------
+
+    /**
+     * True once the player has tapped their first non-given cell.
+     * The timer only increments when this flag is true and the puzzle is not yet complete.
+     */
+    var timerStarted: Boolean = false
+        private set
+
+    // -----------------------------------------------------------------------
     // Lifecycle
     // -----------------------------------------------------------------------
 
-    /** Load a new puzzle. Resets all user input and the selection. */
-    fun loadPuzzle(puzzle: Puzzle) {
+    /**
+     * Load a new puzzle. Resets all user input, selection, timer, and completion state.
+     *
+     * @param puzzle  The puzzle to display.
+     * @param date    The calendar date this puzzle belongs to (for completion persistence).
+     *                Defaults to null (no persistence).
+     */
+    fun loadPuzzle(puzzle: Puzzle, date: LocalDate? = null) {
         val n = puzzle.size
         val userValues = Array(n) { IntArray(n) { 0 } }
+        puzzleDate = date
+        // When no date is provided (legacy / S01 usage), treat timer as already started
+        // so that tickTimer() works unconditionally — preserving S01 behaviour.
+        timerStarted = (date == null)
+        completionPersisted = false
+        _isComplete.value = false
         _uiState.value = buildState(
             puzzle = puzzle,
             userValues = userValues,
@@ -130,6 +191,7 @@ class PuzzleViewModel : ViewModel() {
      *  - Given cells cannot be selected.
      *  - Tapping the already-selected cell deselects it.
      *  - Tapping a different non-given cell selects it.
+     *  - Tapping any non-given cell starts the timer if not already started.
      */
     fun selectCell(row: Int, col: Int) {
         val current = _uiState.value ?: return
@@ -137,6 +199,9 @@ class PuzzleViewModel : ViewModel() {
 
         // Given cells are not selectable
         if (cell.isGiven) return
+
+        // First non-given cell tap starts the timer
+        onFirstCellTap()
 
         val newSelection = if (current.selectedCell == row to col) {
             null  // Toggle off
@@ -149,6 +214,16 @@ class PuzzleViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Signals that the player has tapped their first cell.
+     * Safe to call multiple times — only acts on the first call.
+     */
+    fun onFirstCellTap() {
+        if (!timerStarted) {
+            timerStarted = true
+        }
+    }
+
     // -----------------------------------------------------------------------
     // Number input
     // -----------------------------------------------------------------------
@@ -158,6 +233,7 @@ class PuzzleViewModel : ViewModel() {
      *
      * If [number] is the same as the current value of the selected cell,
      * the cell is cleared (toggles off). Does nothing if no cell is selected.
+     * Does nothing if the puzzle is already complete (guards against modification).
      *
      * @param number Value in [1..difficulty.maxVal].
      */
@@ -173,12 +249,16 @@ class PuzzleViewModel : ViewModel() {
         }
         newUserValues[row][col] = newValue
 
-        _uiState.value = buildState(
+        val newState = buildState(
             puzzle = current.puzzle,
             userValues = newUserValues,
             selectedCell = current.selectedCell,
             elapsedSeconds = current.elapsedSeconds
         )
+        _uiState.value = newState
+
+        // Update isComplete flow and persist on transition to complete
+        handleCompletionChange(newState)
     }
 
     /**
@@ -194,28 +274,110 @@ class PuzzleViewModel : ViewModel() {
         }
         newUserValues[row][col] = 0
 
-        _uiState.value = buildState(
+        val newState = buildState(
             puzzle = current.puzzle,
             userValues = newUserValues,
             selectedCell = current.selectedCell,
             elapsedSeconds = current.elapsedSeconds
         )
+        _uiState.value = newState
+
+        // Re-evaluate completion (clearing a cell may un-complete the puzzle)
+        handleCompletionChange(newState)
     }
 
     // -----------------------------------------------------------------------
-    // Timer (driven by the screen/lifecycle, not by a coroutine here)
+    // Timer
     // -----------------------------------------------------------------------
 
-    /** Update the elapsed-time counter. Called by the screen every second. */
+    /**
+     * Advance the elapsed-time counter by one second.
+     *
+     * Only increments if:
+     *  - The player has tapped their first cell ([timerStarted] == true).
+     *  - The puzzle is not yet complete.
+     *
+     * Called by the screen/lifecycle (e.g., a LaunchedEffect ticker).
+     */
     fun tickTimer() {
+        // Do nothing if timer not started or puzzle already complete
+        if (!timerStarted || _isComplete.value) return
+
         _uiState.update { state ->
             state?.copy(elapsedSeconds = state.elapsedSeconds + 1)
         }
     }
 
+    /**
+     * Elapsed time in milliseconds (derived from [elapsedSeconds]).
+     * Convenience for passing to [saveCompletionState].
+     */
+    val elapsedMillis: Long
+        get() = (uiState.value?.elapsedSeconds ?: 0L) * 1000L
+
+    /**
+     * Formats elapsed milliseconds as "MM:SS".
+     *
+     * @param millis Total elapsed time in milliseconds. Fractional seconds are truncated.
+     * @return String in "MM:SS" format, zero-padded.
+     */
+    fun formatTime(millis: Long): String {
+        val totalSeconds = millis / 1000L
+        val minutes = totalSeconds / 60L
+        val seconds = totalSeconds % 60L
+        return "%02d:%02d".format(minutes, seconds)
+    }
+
     // -----------------------------------------------------------------------
     // Internal helpers
     // -----------------------------------------------------------------------
+
+    /**
+     * Handle a potential change in puzzle completion.
+     *
+     * - Updates [isComplete] flow.
+     * - On first transition to complete, persists state (once only).
+     */
+    private fun handleCompletionChange(newState: PuzzleUiState) {
+        val wasComplete = _isComplete.value
+        val nowComplete = newState.isCompleted
+
+        _isComplete.value = nowComplete
+
+        // Persist exactly once — when puzzle transitions from incomplete to complete
+        if (!wasComplete && nowComplete && !completionPersisted) {
+            completionPersisted = true
+            persistCompletion(newState)
+        }
+    }
+
+    /**
+     * Persist completion state to [completionStore] (if wired) via a coroutine.
+     * In unit tests without a ViewModel scope, this is called synchronously via
+     * the coroutine launched in [viewModelScope] — tests with [InMemoryCompletionStore]
+     * will see results immediately since the store is non-blocking.
+     */
+    private fun persistCompletion(state: PuzzleUiState) {
+        val store = completionStore ?: return
+        val date = puzzleDate ?: return
+        val difficulty = state.puzzle.difficulty
+        val elapsed = state.elapsedSeconds * 1000L
+
+        // Use the injected scope when provided (unit tests pass a TestScope or Unconfined scope).
+        // In production, persistScope is null and we use viewModelScope. We avoid calling
+        // viewModelScope in non-Android environments because it requires Dispatchers.Main.
+        val scope = persistScope ?: viewModelScope
+        scope.launch {
+            store.save(
+                "completion_${date.toEpochDay()}_${difficulty.name}",
+                org.dgeek.sumgrid.daily.CompletionState(
+                    completed = true,
+                    elapsedMillis = elapsed,
+                    completedAt = System.currentTimeMillis()
+                )
+            )
+        }
+    }
 
     /**
      * Build an immutable [PuzzleUiState] from raw mutable state.

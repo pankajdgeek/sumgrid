@@ -81,8 +81,12 @@ dependencies {
     // Play In-App Review
     implementation(libs.play.review)
 
+    // Coroutines
+    implementation(libs.kotlinx.coroutines.core)
+
     // Testing
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
