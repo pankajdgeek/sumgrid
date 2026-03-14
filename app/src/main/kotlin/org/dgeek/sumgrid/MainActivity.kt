@@ -4,46 +4,30 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import org.dgeek.sumgrid.navigation.SumGridNavHost
 import org.dgeek.sumgrid.ui.theme.SumGridTheme
 
+/**
+ * Single-activity entry point for SumGrid.
+ *
+ * Hosts the [SumGridNavHost] which provides a two-destination navigation graph:
+ *  - Home: today's puzzle overview, streak, countdown, difficulty picker
+ *  - Puzzle: active puzzle for the selected difficulty
+ *
+ * Dependencies are resolved from [SumGridApplication.container].
+ */
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val container = (application as SumGridApplication).container
+
         setContent {
             SumGridTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    SumGridPlaceholder(modifier = Modifier.padding(innerPadding))
-                }
+                SumGridNavHost(container = container)
             }
         }
-    }
-}
-
-@Composable
-private fun SumGridPlaceholder(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = "SumGrid")
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun SumGridPlaceholderPreview() {
-    SumGridTheme {
-        SumGridPlaceholder()
     }
 }

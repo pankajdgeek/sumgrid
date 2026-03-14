@@ -9,6 +9,8 @@ import org.dgeek.sumgrid.daily.DataStoreCompletionStore
 import org.dgeek.sumgrid.daily.DailyPuzzleRepository
 import org.dgeek.sumgrid.engine.PuzzleGenerator
 import org.dgeek.sumgrid.engine.UniqueSolutionValidator
+import org.dgeek.sumgrid.streak.InMemoryStreakRepository
+import org.dgeek.sumgrid.streak.StreakRepository
 
 // ---------------------------------------------------------------------------
 // DataStore singletons (one per named store)
@@ -51,6 +53,19 @@ class AppContainer(application: SumGridApplication) {
 
     val dailyPuzzleRepository: DailyPuzzleRepository by lazy {
         DailyPuzzleRepository(puzzleGenerator, completionStore)
+    }
+
+    val streakRepository: StreakRepository by lazy {
+        StreakRepository(application.streakDataStore)
+    }
+
+    /**
+     * In-memory streak repository used by [HomeViewModel].
+     * For the MVP this is the primary streak source;
+     * [streakRepository] is kept for future DataStore-backed persistence.
+     */
+    val inMemoryStreakRepository: InMemoryStreakRepository by lazy {
+        InMemoryStreakRepository()
     }
 }
 
