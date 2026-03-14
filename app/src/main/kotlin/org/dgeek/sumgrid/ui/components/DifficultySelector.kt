@@ -99,7 +99,7 @@ private fun DifficultyCard(
     val estimatedTime = difficulty.estimatedTime()
     val description = "$label, $gridSize grid, ~$estimatedTime"
 
-    val borderWidth = if (isSelected) 2.dp else 1.dp
+    val borderWidth = if (isSelected) 2.dp else 1.5.dp
     val borderColor = if (isSelected) {
         MaterialTheme.colorScheme.primary
     } else {
@@ -108,7 +108,7 @@ private fun DifficultyCard(
     val containerColor = if (isSelected) {
         MaterialTheme.colorScheme.primaryContainer
     } else {
-        MaterialTheme.colorScheme.surface
+        MaterialTheme.colorScheme.surfaceContainerHigh
     }
     val labelColor = if (isSelected) {
         MaterialTheme.colorScheme.onPrimaryContainer

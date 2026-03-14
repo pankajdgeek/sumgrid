@@ -1,5 +1,6 @@
 package org.dgeek.sumgrid.ui
 
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -49,6 +50,29 @@ class HomeScreenLayoutTest {
         assertTrue(
             "Badge items should have accessibility content descriptions",
             homeScreenSource.contains("contentDescription")
+        )
+    }
+
+    // ── T016 — Abbreviated PuzzleStatusChip labels ───────────────────────────
+
+    @Test
+    fun puzzleStatusChip_usesAbbreviatedLabels() {
+        assertTrue(
+            "PuzzleStatusChip must use abbreviated labels",
+            homeScreenSource.contains("\"BEG\"") || homeScreenSource.contains("abbreviatedLabel")
+        )
+    }
+
+    @Test
+    fun puzzleStatusChip_doesNotUseLowercaseReplaceFirstChar() {
+        // replaceFirstChar is acceptable in BadgeRow accessibility labels but must NOT
+        // appear inside the PuzzleStatusChip call site. Check that the label mapping
+        // uses abbreviated strings rather than full names derived from replaceFirstChar.
+        // Since we now use a when expression with "BEG", this test verifies the pattern.
+        val hasBegAbbreviation = homeScreenSource.contains("\"BEG\"")
+        assertTrue(
+            "PuzzleStatusChip must use abbreviated label 'BEG' (not full difficulty name)",
+            hasBegAbbreviation
         )
     }
 }

@@ -22,6 +22,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -172,10 +173,15 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 state.puzzleStatuses.forEach { status ->
+                    val abbreviatedLabel = when (status.difficulty) {
+                        Difficulty.BEGINNER -> "BEG"
+                        Difficulty.EASY     -> "EASY"
+                        Difficulty.MEDIUM   -> "MED"
+                        Difficulty.HARD     -> "HARD"
+                        Difficulty.EXPERT   -> "EXP"
+                    }
                     PuzzleStatusChip(
-                        label = status.difficulty.name
-                            .lowercase()
-                            .replaceFirstChar { it.uppercaseChar() },
+                        label = abbreviatedLabel,
                         isCompleted = status.isCompleted,
                         modifier = Modifier.weight(1f)
                     )
@@ -216,6 +222,10 @@ fun HomeScreen(
                         selectedDifficulty?.let { onStartPuzzle(it) }
                     },
                     enabled = selectedDifficulty != null,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                    ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp)
@@ -274,29 +284,41 @@ private fun StreakDisplay(streak: Int, modifier: Modifier = Modifier) {
         shape = MaterialTheme.shapes.medium,
         modifier = modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        if (streak == 0) {
             Text(
-                text = "\uD83D\uDD25",  // fire emoji
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.alpha(flameAlpha)
-            )
-            Text(
-                text = " $streak",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                modifier = Modifier.scale(streakScale)
-            )
-            Text(
-                text = if (streak == 1) "  day streak" else "  days streak",
+                text = "Start your streak!",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
-                modifier = Modifier.padding(top = 2.dp)
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 16.dp)
             )
+        } else {
+            Row(
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "\uD83D\uDD25",  // fire emoji
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.alpha(flameAlpha)
+                )
+                Text(
+                    text = " $streak",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.scale(streakScale)
+                )
+                Text(
+                    text = if (streak == 1) "  day streak" else "  days streak",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
         }
     }
 }

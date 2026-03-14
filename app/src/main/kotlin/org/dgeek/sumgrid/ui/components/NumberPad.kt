@@ -3,10 +3,12 @@ package org.dgeek.sumgrid.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -84,9 +86,11 @@ fun NumberPad(
                                 .size(48.dp)
                         )
                     }
-                    // Put action buttons on the second row
+                    // Put action buttons on the second row with visual separator
                     if (index == rows.lastIndex) {
                         if (onUndoTap != null) {
+                            // Visual gap separating digits from action buttons
+                            Spacer(modifier = Modifier.width(8.dp))
                             UndoButton(
                                 enabled = canUndo,
                                 onClick = onUndoTap,
@@ -212,13 +216,15 @@ private fun UndoButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    OutlinedButton(
+    Button(
         onClick = onClick,
         enabled = enabled,
         shape = RoundedCornerShape(8.dp),
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor   = MaterialTheme.colorScheme.onSurface,
-            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor   = MaterialTheme.colorScheme.onSecondaryContainer,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            disabledContentColor   = MaterialTheme.colorScheme.onSurfaceVariant
         ),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
         modifier = modifier.semantics { contentDescription = "Undo last move" }

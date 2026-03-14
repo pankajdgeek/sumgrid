@@ -4,12 +4,11 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
@@ -54,9 +53,9 @@ import org.dgeek.sumgrid.viewmodel.PuzzleViewModel
  * Root screen composable for an active SumGrid puzzle.
  *
  * Composes:
- *  - A top timer display showing elapsed seconds.
+ *  - A TopAppBar with difficulty title and elapsed timer in the trailing actions slot.
  *  - [GridRenderer]: Canvas-drawn NxN grid with row/col sum indicators.
- *  - [NumberPad]: Bottom-anchored digit buttons.
+ *  - [NumberPad]: Digit buttons grouped with the grid in a centered layout.
  *  - A completion banner when [PuzzleViewModel.uiState] reports [isCompleted].
  *
  * The timer is driven by a [LaunchedEffect] coroutine that ticks every second
@@ -113,6 +112,17 @@ fun PuzzleScreen(
                         }
                     }
                 },
+                actions = {
+                    val currentState = state
+                    if (currentState != null) {
+                        Text(
+                            text = formatElapsed(currentState.elapsedSeconds),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(end = 16.dp)
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0f)
                 )
@@ -137,7 +147,8 @@ fun PuzzleScreen(
             return@Scaffold
         }
 
-        Column(
+        // Outer box fills screen and centers grid+numpad group vertically
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
@@ -148,134 +159,121 @@ fun PuzzleScreen(
                         )
                     )
                 )
-                .padding(innerPadding)
+                .padding(innerPadding),
+            contentAlignment = Alignment.Center
         ) {
-            // ── Timer display ────────────────────────────────────────────────
-            Text(
-                text      = formatElapsed(currentState.elapsedSeconds),
-                modifier  = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 4.dp),
-                textAlign = TextAlign.Center,
-                style     = MaterialTheme.typography.labelLarge,
-                color     = MaterialTheme.colorScheme.onSurface
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // ── Celebration state (drives overlay when puzzle is complete) ────
+            // Celebration state (drives overlay when puzzle is complete)
             val celebrationState = rememberCelebrationState(
                 isComplete = currentState.isCompleted,
                 gridSize   = currentState.puzzle.size
             )
 
-            // ── Grid + celebration overlay ────────────────────────────────────
-            Box(modifier = Modifier.fillMaxWidth()) {
-                GridRenderer(
-                    state       = currentState,
-                    onCellTap   = { row, col ->
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        vm.selectCell(row, col)
-                    },
-                    modifier    = Modifier.fillMaxWidth(),
-                    pulsingCell = null
-                )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // ── Grid + celebration overlay ──────────────────────────────
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    GridRenderer(
+                        state       = currentState,
+                        onCellTap   = { row, col ->
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            vm.selectCell(row, col)
+                        },
+                        modifier    = Modifier.fillMaxWidth(),
+                        outerPaddingDp = 4f,
+                        pulsingCell = null
+                    )
 
-                // Celebration overlay — visible only when puzzle is complete
-                if (currentState.isCompleted) {
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .zIndex(1f)
-                            .testTag("celebration_overlay")
-                    ) {
-                        // The celebration state drives per-cell scale animations
-                        // via CelebrationCellWrapper. For now, this overlay triggers
-                        // the animation; enhanced visuals come in S03-F003.
+                    // Celebration overlay — visible only when puzzle is complete
+                    if (currentState.isCompleted) {
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .zIndex(1f)
+                                .testTag("celebration_overlay")
+                        ) {
+                            // The celebration state drives per-cell scale animations
+                            // via CelebrationCellWrapper. For now, this overlay triggers
+                            // the animation; enhanced visuals come in S03-F003.
+                        }
                     }
                 }
-            }
 
-            // ── Tap hint — visible when no cell is selected ───────────────────
-            AnimatedVisibility(
-                visible = currentState.selectedCell == null,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                Text(
-                    text = "Tap an empty cell to start",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            // ── Completion banner + share ──────────────────────────────────────
-            if (currentState.isCompleted) {
-                Text(
-                    text      = "Puzzle complete! \uD83C\uDF89",
-                    modifier  = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp),
-                    textAlign = TextAlign.Center,
-                    fontSize  = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color     = MaterialTheme.colorScheme.primary
-                )
-
-                val onShare = {
-                    val date = puzzleDate ?: java.time.LocalDate.now()
-                    val shareText = ShareCardGenerator.generate(
-                        puzzle = currentState.puzzle,
-                        elapsedMillis = vm.elapsedMillis,
-                        date = date
-                    )
-                    shareResult(context, shareText)
-                }
-
-                OutlinedButton(
-                    onClick = onShare,
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(bottom = 8.dp)
-                        .semantics { contentDescription = "Share your result" }
+                // ── Tap hint — visible when no cell is selected ─────────────
+                AnimatedVisibility(
+                    visible = currentState.selectedCell == null,
+                    enter = fadeIn(),
+                    exit = fadeOut()
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.Share,
-                        contentDescription = null,
-                        modifier = Modifier.padding(end = 8.dp)
+                    Text(
+                        text = "Tap an empty cell to start",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
                     )
-                    Text("Share")
                 }
-            }
 
-            // ── Number pad ───────────────────────────────────────────────────
-            NumberPad(
-                difficulty   = currentState.puzzle.difficulty,
-                selectedCell = currentState.selectedCell,
-                onNumberTap  = { number ->
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    vm.enterNumber(number)
-                },
-                onClearTap   = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    vm.clearCell()
-                },
-                onUndoTap    = {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    vm.undo()
-                },
-                canUndo      = vm.canUndo,
-                isVisible    = !currentState.isCompleted,
-                modifier     = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
-            )
+                // ── Completion banner + share ────────────────────────────────
+                if (currentState.isCompleted) {
+                    Text(
+                        text      = "Puzzle complete! \uD83C\uDF89",
+                        modifier  = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center,
+                        fontSize  = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color     = MaterialTheme.colorScheme.primary
+                    )
+
+                    val onShare = {
+                        val date = puzzleDate ?: java.time.LocalDate.now()
+                        val shareText = ShareCardGenerator.generate(
+                            puzzle = currentState.puzzle,
+                            elapsedMillis = vm.elapsedMillis,
+                            date = date
+                        )
+                        shareResult(context, shareText)
+                    }
+
+                    OutlinedButton(
+                        onClick = onShare,
+                        modifier = Modifier
+                            .semantics { contentDescription = "Share your result" }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Share,
+                            contentDescription = null,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        Text("Share")
+                    }
+                }
+
+                // ── Number pad ──────────────────────────────────────────────
+                NumberPad(
+                    difficulty   = currentState.puzzle.difficulty,
+                    selectedCell = currentState.selectedCell,
+                    onNumberTap  = { number ->
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        vm.enterNumber(number)
+                    },
+                    onClearTap   = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        vm.clearCell()
+                    },
+                    onUndoTap    = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        vm.undo()
+                    },
+                    canUndo      = vm.canUndo,
+                    isVisible    = !currentState.isCompleted,
+                    modifier     = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)
+                )
+            }
         }
     }
 }

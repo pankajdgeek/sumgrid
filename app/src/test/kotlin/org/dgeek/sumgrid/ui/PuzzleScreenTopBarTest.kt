@@ -1,5 +1,6 @@
 package org.dgeek.sumgrid.ui
 
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -57,6 +58,53 @@ class PuzzleScreenTopBarTest {
         assertTrue(
             "PuzzleScreen should call ShareCardGenerator.generate",
             puzzleScreenSource.contains("ShareCardGenerator.generate")
+        )
+    }
+
+    // ── T011 — Layout restructure source-scan tests ───────────────────────────
+
+    @Test
+    fun puzzleScreen_doesNotHaveWeightSpacer() {
+        assertFalse(
+            "PuzzleScreen must not have Spacer(weight(1f)) between grid and numpad",
+            puzzleScreenSource.contains("Modifier.weight(1f)")
+        )
+    }
+
+    @Test
+    fun puzzleScreen_hasCenteredLayout() {
+        assertTrue(
+            "PuzzleScreen must use contentAlignment = Alignment.Center",
+            puzzleScreenSource.contains("contentAlignment = Alignment.Center") ||
+            puzzleScreenSource.contains("verticalArrangement = Arrangement.Center")
+        )
+    }
+
+    // ── T015 — Timer in TopAppBar source-scan tests ───────────────────────────
+
+    @Test
+    fun puzzleScreen_timerIsInTopAppBarActions() {
+        val topBarSection = puzzleScreenSource
+            .substringAfter("TopAppBar(")
+            .substringBefore("}) { innerPadding ->")
+        assertTrue(
+            "Timer must be in TopAppBar actions slot",
+            topBarSection.contains("formatElapsed") || topBarSection.contains("elapsedSeconds")
+        )
+    }
+
+    @Test
+    fun puzzleScreen_noStandaloneTimerText() {
+        // The timer must appear ONLY inside topBar = { ... } (the TopAppBar actions slot).
+        // It must NOT appear as a standalone Text in the Scaffold body Column.
+        // Verify: timer Text is inside the topBar lambda. We check by confirming
+        // the Box(contentAlignment = Alignment.Center) body does not contain "formatElapsed(".
+        val scaffoldBodySection = puzzleScreenSource
+            .substringAfter("contentAlignment = Alignment.Center")
+            .substringBefore("private fun formatElapsed")
+        assertFalse(
+            "No standalone timer Text using formatElapsed in the puzzle screen body",
+            scaffoldBodySection.contains("formatElapsed(")
         )
     }
 
