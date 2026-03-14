@@ -16,6 +16,7 @@ firebaseBom = "33.7.0"
 playReview = "2.0.2"
 coreSplashscreen = "1.0.1"
 # Google services / Crashlytics plugin versions
+desugarJdkLibs = "2.1.4"
 googleServices = "4.4.2"
 crashlyticsPlugin = "3.0.2"
 
@@ -51,6 +52,8 @@ androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscree
 # Coroutines (core + test)
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
+# Core library desugaring (java.time.* on API < 26)
+desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugarJdkLibs" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
