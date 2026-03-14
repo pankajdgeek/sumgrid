@@ -7,7 +7,7 @@ import androidx.compose.ui.graphics.Color
 val Indigo10 = Color(0xFF00006E)
 val Indigo20 = Color(0xFF0001AC)
 val Indigo30 = Color(0xFF1B1FCA)
-val Indigo40 = Color(0xFF343DDE) // light scheme primary
+val Indigo40 = Color(0xFF3730A3) // light scheme primary
 val Indigo80 = Color(0xFFBBC2FF) // dark scheme primary
 val Indigo90 = Color(0xFFDDE1FF) // dark scheme onPrimary container
 
