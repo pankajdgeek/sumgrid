@@ -1,6 +1,7 @@
 package org.dgeek.sumgrid.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -77,6 +78,7 @@ fun HomeScreen(
 ) {
     val state by vm.uiState.collectAsState()
     var selectedDifficulty by remember { mutableStateOf<Difficulty?>(Difficulty.BEGINNER) }
+    var selectedBadge by remember { mutableStateOf<StreakBadge?>(null) }
 
     // Tick the countdown every second
     LaunchedEffect(Unit) {
@@ -139,7 +141,15 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             // ── Badges ──────────────────────────────────────────────────
-            BadgeRow(earnedBadges = state.earnedBadges)
+            BadgeRow(
+                earnedBadges = state.earnedBadges,
+                onBadgeTap = { badge -> selectedBadge = badge }
+            )
+
+            // Bottom sheet placeholder — wired in Sprint 2C (T024)
+            if (selectedBadge != null) {
+                // TODO(S2C-T024): show badge detail bottom sheet for selectedBadge
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -352,6 +362,7 @@ private fun CountdownDisplay(countdown: String, modifier: Modifier = Modifier) {
 @Composable
 private fun BadgeRow(
     earnedBadges: Set<StreakBadge>,
+    onBadgeTap: (StreakBadge) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -361,17 +372,27 @@ private fun BadgeRow(
     ) {
         StreakBadge.entries.forEach { badge ->
             val earned = badge in earnedBadges
-            BadgeItem(badge = badge, earned = earned)
+            BadgeItem(
+                badge = badge,
+                earned = earned,
+                onClick = { onBadgeTap(badge) }
+            )
         }
     }
 }
 
 @Composable
-private fun BadgeItem(badge: StreakBadge, earned: Boolean, modifier: Modifier = Modifier) {
+private fun BadgeItem(
+    badge: StreakBadge,
+    earned: Boolean,
+    onClick: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
     val alpha = if (earned) 1f else 0.38f
     val label = if (earned) "${badge.displayName} — Earned" else "${badge.displayName} — Locked"
     Column(
         modifier = modifier
+            .clickable(onClick = onClick)
             .alpha(alpha)
             .padding(4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -383,12 +404,7 @@ private fun BadgeItem(badge: StreakBadge, earned: Boolean, modifier: Modifier = 
                 contentDescription = label
             }
         )
-        Text(
-            text = badge.displayName,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
+        // displayName text label intentionally removed — emoji-only display per S2A-F002
     }
 }
 
