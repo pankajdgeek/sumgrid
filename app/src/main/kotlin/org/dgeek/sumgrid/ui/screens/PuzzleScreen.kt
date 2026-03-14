@@ -19,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
@@ -48,6 +50,14 @@ fun PuzzleScreen(
     modifier: Modifier = Modifier
 ) {
     val state by vm.uiState.collectAsState()
+    val haptic = LocalHapticFeedback.current
+
+    // Fire haptic on puzzle completion
+    LaunchedEffect(state?.isCompleted) {
+        if (state?.isCompleted == true) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        }
+    }
 
     // Tick the elapsed timer every second while the puzzle is active
     LaunchedEffect(state?.isCompleted) {
@@ -106,7 +116,10 @@ fun PuzzleScreen(
             Box(modifier = Modifier.fillMaxWidth()) {
                 GridRenderer(
                     state     = currentState,
-                    onCellTap = { row, col -> vm.selectCell(row, col) },
+                    onCellTap = { row, col ->
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        vm.selectCell(row, col)
+                    },
                     modifier  = Modifier.fillMaxWidth()
                 )
 
@@ -145,8 +158,14 @@ fun PuzzleScreen(
             NumberPad(
                 difficulty   = currentState.puzzle.difficulty,
                 selectedCell = currentState.selectedCell,
-                onNumberTap  = { number -> vm.enterNumber(number) },
-                onClearTap   = { vm.clearCell() },
+                onNumberTap  = { number ->
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    vm.enterNumber(number)
+                },
+                onClearTap   = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    vm.clearCell()
+                },
                 isVisible    = !currentState.isCompleted,
                 modifier     = Modifier
                     .fillMaxWidth()
