@@ -27,3 +27,4 @@ app/build/
 
 # Gradle wrapper jar (binary — re-generated via `gradle wrapper`)
 gradle/wrapper/gradle-wrapper.jar
+.kotlin/
