@@ -9,6 +9,9 @@ import org.dgeek.sumgrid.daily.DataStoreCompletionStore
 import org.dgeek.sumgrid.daily.DailyPuzzleRepository
 import org.dgeek.sumgrid.engine.PuzzleGenerator
 import org.dgeek.sumgrid.engine.UniqueSolutionValidator
+import org.dgeek.sumgrid.analytics.AnalyticsTracker
+import org.dgeek.sumgrid.analytics.NoOpAnalyticsTracker
+import org.dgeek.sumgrid.onboarding.OnboardingRepository
 import org.dgeek.sumgrid.review.InAppReviewTrigger
 import org.dgeek.sumgrid.streak.InMemoryStreakRepository
 import org.dgeek.sumgrid.streak.StreakRepository
@@ -72,6 +75,16 @@ class AppContainer(application: SumGridApplication) {
      */
     val inMemoryStreakRepository: InMemoryStreakRepository by lazy {
         InMemoryStreakRepository()
+    }
+
+    /** Analytics tracker — NoOp by default since Firebase requires google-services.json. */
+    val analyticsTracker: AnalyticsTracker by lazy {
+        NoOpAnalyticsTracker()
+    }
+
+    /** Onboarding repository — tracks launch count and curated puzzle progression. */
+    val onboardingRepository: OnboardingRepository by lazy {
+        OnboardingRepository(application.onboardingDataStore)
     }
 
     /**
