@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -146,10 +147,36 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             // ── Badges ──────────────────────────────────────────────────
-            BadgeRow(
-                earnedBadges = state.earnedBadges,
-                onBadgeTap = { badge -> selectedBadge = badge }
-            )
+            // On short screens (height <= 560dp), collapse the badge row into a single chip.
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                val isShortScreen = maxHeight <= 560.dp
+                if (isShortScreen) {
+                    // Collapsed: single "🏆 Badges" chip that opens the bottom sheet
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        shape = MaterialTheme.shapes.small,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedBadge = StreakBadge.entries.firstOrNull() }
+                    ) {
+                        Text(
+                            text = "\uD83C\uDFC6 Badges",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 10.dp)
+                        )
+                    }
+                } else {
+                    // Full emoji row on tall screens
+                    BadgeRow(
+                        earnedBadges = state.earnedBadges,
+                        onBadgeTap = { badge -> selectedBadge = badge }
+                    )
+                }
+            }
 
             // Badge detail bottom sheet — opened when user taps a badge (S2C-F002)
             if (selectedBadge != null) {
