@@ -1,0 +1,238 @@
+# Domain Memory v1.0 — Sprint S2C: UX Enhancements
+version: "1.0"
+created: "2026-03-14T11:30:00Z"
+last_updated: "2026-03-14T12:45:00Z"
+
+goal:
+  sprint_id: "S2C"
+  name: "UX Enhancements"
+  estimate_hours: 20
+  original_prompt: "Completed puzzle overlay, badge detail sheet, collapsible badge row, numpad animation, dgeek footer, first-cell pulse"
+  expanded_description: >
+    With layout fixed (S2A) and spacing polished (S2B), Sprint S2C adds UX richness.
+    Difficulty cards should show a completion checkmark for solved puzzles. Badge taps should
+    open a detail bottom sheet with name and progress info. On short devices, the badge row
+    should collapse to a single chip. The numpad enable/disable should have a smooth transition
+    animation. The 'More by dgeek' footer should be removed or wired to a real URL.
+    First-time onboarding should include a pulsing animation on the first empty cell.
+    These are medium-priority, medium-effort items that complete the Phase 2 experience.
+  success_criteria:
+    - "Difficulty cards display a checkmark overlay when puzzle is completed — DONE"
+    - "Tapping any badge opens a bottom sheet with badge name, description, and progress indicator — DONE"
+    - "On short screens, badge row collapses to a single chip; tap opens sheet — DONE"
+    - "Numpad buttons animate smoothly from disabled-gray to enabled state (150ms tween) — DONE"
+    - "dgeek footer removed from HomeScreen — DONE"
+    - "First empty cell pulses on puzzle load as an onboarding cue; stops after first interaction — DONE"
+
+features:
+  - id: "S2C-F001"
+    name: "Mark completed puzzles in difficulty selector"
+    description: >
+      Added isCompleted parameter to DifficultyCard. When a difficulty is completed,
+      a tertiary-color checkmark badge overlays the top-right corner of the card.
+      HomeScreen passes completedDifficulties set derived from puzzleStatuses.
+    status: "passing"
+    test_file: ""
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/components/DifficultySelector.kt"
+    priority: 61
+    dependencies: ["S2A-F001"]
+    domain: "frontend"
+    effort_hours: 2
+    severity: "medium"
+    last_attempt:
+      timestamp: "2026-03-14T12:10:00Z"
+      agent: "worker"
+      result: "passing"
+      error: null
+    attempts:
+      - approach: "Box overlay with Surface checkmark badge in top-end corner"
+        result: "Passed: build succeeded, test passed"
+
+  - id: "S2C-F002"
+    name: "Build badge detail bottom sheet"
+    description: >
+      Created BadgeDetailBottomSheet.kt composable using ModalBottomSheet.
+      Shows badge emoji (grayscale if unearned), badge displayName, milestone description,
+      and Earned/Locked status pill. Wired to selectedBadge state in HomeScreen.
+      Source-scan tests in BadgeDetailBottomSheetTest.kt cover all required properties.
+    status: "passing"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/ui/BadgeDetailBottomSheetTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/components/BadgeDetailBottomSheet.kt"
+    priority: 62
+    dependencies: ["S2A-F002", "S2A-F003"]
+    domain: "frontend"
+    effort_hours: 4
+    severity: "medium"
+    last_attempt:
+      timestamp: "2026-03-14T12:20:00Z"
+      agent: "worker"
+      result: "passing"
+      error: null
+    attempts:
+      - approach: "ModalBottomSheet with grayscale ColorMatrix for unearned badges"
+        result: "Passed: all 7 source-scan tests green, build successful"
+
+  - id: "S2C-F003"
+    name: "Collapse badge row into chip on short screens"
+    description: >
+      Used BoxWithConstraints in HomeScreen to measure available height. When maxHeight <= 560dp,
+      shows a single 'Badges' chip that opens the bottom sheet. On tall screens, shows the full
+      emoji BadgeRow as before.
+    status: "passing"
+    test_file: ""
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/screens/HomeScreen.kt"
+    priority: 63
+    dependencies: ["S2A-F002", "S2C-F002"]
+    domain: "frontend"
+    effort_hours: 3
+    severity: "medium"
+    last_attempt:
+      timestamp: "2026-03-14T12:25:00Z"
+      agent: "worker"
+      result: "passing"
+      error: null
+    attempts:
+      - approach: "BoxWithConstraints with 560dp threshold for chip vs full row"
+        result: "Passed: build successful"
+
+  - id: "S2C-F004"
+    name: "Add numpad enable/disable transition animation"
+    description: >
+      Wrapped NumberButton and ClearButton colors in animateColorAsState with 150ms tween.
+      Colors animate smoothly from disabled (surfaceVariant) to enabled (primaryContainer)
+      when a cell is selected and back when deselected.
+    status: "passing"
+    test_file: ""
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/components/NumberPad.kt"
+    priority: 64
+    dependencies: ["S2A-F005"]
+    domain: "frontend"
+    effort_hours: 1
+    severity: "low"
+    last_attempt:
+      timestamp: "2026-03-14T12:05:00Z"
+      agent: "worker"
+      result: "passing"
+      error: null
+    attempts:
+      - approach: "animateColorAsState with tween(150ms) on container and content colors"
+        result: "Passed: build successful"
+
+  - id: "S2C-F005"
+    name: "Remove or link dgeek footer"
+    description: >
+      Removed the 'More by dgeek' Text composable and its surrounding Spacer from HomeScreen.
+      Cleaned up related padding.
+    status: "passing"
+    test_file: ""
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/screens/HomeScreen.kt"
+    priority: 65
+    dependencies: []
+    domain: "frontend"
+    effort_hours: 1
+    severity: "low"
+    last_attempt:
+      timestamp: "2026-03-14T12:00:00Z"
+      agent: "worker"
+      result: "passing"
+      error: null
+    attempts:
+      - approach: "Delete Text composable and surrounding Spacer"
+        result: "Passed: build successful, footer gone"
+
+  - id: "S2C-F006"
+    name: "Add first-empty-cell pulse animation for onboarding"
+    description: >
+      Added InfiniteTransition with animateFloat for scale (1.0->1.08) and alpha (0.5->1.0)
+      at 600ms tween in GridRenderer. PuzzleScreen computes firstEmptyCell when timerStarted
+      is false and no cell is selected. Passes it to GridRenderer.pulsingCell. Cell stops
+      pulsing on first tap. Source-scan tests in FirstCellPulseTest.kt.
+    status: "passing"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/ui/FirstCellPulseTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/components/GridRenderer.kt"
+    priority: 66
+    dependencies: ["S2A-F004", "S2A-F005"]
+    domain: "frontend"
+    effort_hours: 4
+    severity: "medium"
+    last_attempt:
+      timestamp: "2026-03-14T12:40:00Z"
+      agent: "worker"
+      result: "passing"
+      error: null
+    attempts:
+      - approach: "rememberInfiniteTransition with scale/alpha on pulsing cell border"
+        result: "Passed: all 5 source-scan tests green, build successful"
+
+log:
+  - timestamp: "2026-03-14T11:30:00Z"
+    agent: "initializer"
+    action: "expanded_goal"
+    feature_id: null
+    result: "Initialized Sprint S2C domain memory with 6 UX enhancement features"
+    duration_ms: 0
+  - timestamp: "2026-03-14T12:00:00Z"
+    agent: "worker"
+    action: "completed_feature"
+    feature_id: "S2C-F005"
+    result: "Removed 'More by dgeek' footer from HomeScreen"
+    duration_ms: 120000
+  - timestamp: "2026-03-14T12:05:00Z"
+    agent: "worker"
+    action: "completed_feature"
+    feature_id: "S2C-F004"
+    result: "Added 150ms animateColorAsState tween to numpad buttons"
+    duration_ms: 180000
+  - timestamp: "2026-03-14T12:10:00Z"
+    agent: "worker"
+    action: "completed_feature"
+    feature_id: "S2C-F001"
+    result: "Added checkmark overlay to completed difficulty cards"
+    duration_ms: 240000
+  - timestamp: "2026-03-14T12:20:00Z"
+    agent: "worker"
+    action: "completed_feature"
+    feature_id: "S2C-F002"
+    result: "Created BadgeDetailBottomSheet composable with ModalBottomSheet, wired to HomeScreen"
+    duration_ms: 300000
+  - timestamp: "2026-03-14T12:25:00Z"
+    agent: "worker"
+    action: "completed_feature"
+    feature_id: "S2C-F003"
+    result: "Collapse badge row to single chip on screens <= 560dp using BoxWithConstraints"
+    duration_ms: 180000
+  - timestamp: "2026-03-14T12:40:00Z"
+    agent: "worker"
+    action: "completed_feature"
+    feature_id: "S2C-F006"
+    result: "First-empty-cell pulse animation using InfiniteTransition in GridRenderer"
+    duration_ms: 360000
+  - timestamp: "2026-03-14T12:45:00Z"
+    agent: "worker"
+    action: "sprint_completed"
+    feature_id: null
+    result: "All 6 S2C features passing. ./gradlew test && ./gradlew assembleDebug both succeeded."
+    duration_ms: 0
+
+tried: {}
+
+current:
+  feature_id: null
+  started_at: null
+  status: "completed"
+
+tests:
+  total: 12
+  passing: 12
+  failing: 0
+  skipped: 0
+  last_run: "2026-03-14T12:44:00Z"
+  command: "./gradlew test"
+  coverage: null
+
+metadata:
+  workflow_type: "epic"
+  parent_epic: "004-sumgrid-phase-2-fix-layout-breakage"
+  sprint_id: "S2C"
+  source: "worker"
+  depends_on: ["S2A", "S2B"]
