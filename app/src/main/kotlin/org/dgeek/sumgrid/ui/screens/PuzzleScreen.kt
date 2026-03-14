@@ -1,5 +1,8 @@
 package org.dgeek.sumgrid.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -169,12 +172,13 @@ fun PuzzleScreen(
             // ── Grid + celebration overlay ────────────────────────────────────
             Box(modifier = Modifier.fillMaxWidth()) {
                 GridRenderer(
-                    state     = currentState,
-                    onCellTap = { row, col ->
+                    state       = currentState,
+                    onCellTap   = { row, col ->
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         vm.selectCell(row, col)
                     },
-                    modifier  = Modifier.fillMaxWidth()
+                    modifier    = Modifier.fillMaxWidth(),
+                    pulsingCell = null
                 )
 
                 // Celebration overlay — visible only when puzzle is complete
@@ -190,6 +194,23 @@ fun PuzzleScreen(
                         // the animation; enhanced visuals come in S03-F003.
                     }
                 }
+            }
+
+            // ── Tap hint — visible when no cell is selected ───────────────────
+            AnimatedVisibility(
+                visible = currentState.selectedCell == null,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                Text(
+                    text = "Tap an empty cell to start",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                )
             }
 
             Spacer(modifier = Modifier.weight(1f))

@@ -127,7 +127,9 @@ fun GridRenderer(
     state: PuzzleUiState,
     onCellTap: (row: Int, col: Int) -> Unit,
     modifier: Modifier = Modifier,
-    outerPaddingDp: Float = 16f
+    outerPaddingDp: Float = 16f,
+    // Stub for Sprint 2C pulse animation (T030 will wire this)
+    pulsingCell: Pair<Int, Int>? = null
 ) {
     val textMeasurer = rememberTextMeasurer()
     val colors = gridColorsFromTheme()

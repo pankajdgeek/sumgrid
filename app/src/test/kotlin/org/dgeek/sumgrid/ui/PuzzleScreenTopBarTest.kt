@@ -59,4 +59,30 @@ class PuzzleScreenTopBarTest {
             puzzleScreenSource.contains("ShareCardGenerator.generate")
         )
     }
+
+    // ── T009 — Tap hint source-scan tests ────────────────────────────────────
+
+    @Test
+    fun puzzleScreen_hasTapHintText() {
+        assertTrue(
+            "PuzzleScreen must show 'Tap an empty cell to start' hint",
+            puzzleScreenSource.contains("Tap an empty cell to start")
+        )
+    }
+
+    @Test
+    fun puzzleScreen_hintGatedOnSelectedCell() {
+        assertTrue(
+            "Hint must be gated on selectedCell == null",
+            puzzleScreenSource.contains("selectedCell == null")
+        )
+    }
+
+    @Test
+    fun puzzleScreen_hintUsesAnimatedVisibility() {
+        assertTrue(
+            "Hint should use AnimatedVisibility for smooth appear/disappear",
+            puzzleScreenSource.contains("AnimatedVisibility")
+        )
+    }
 }
