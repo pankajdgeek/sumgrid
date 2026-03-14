@@ -1,0 +1,210 @@
+version: "1.0"
+created: "2026-03-14T11:30:00Z"
+last_updated: "2026-03-14T12:45:00Z"
+
+goal:
+  sprint_id: "S2A"
+  name: "Critical Layout Fixes"
+  estimate_hours: 12
+  original_prompt: "Fix the most visually broken issues introduced by 5-difficulty expansion"
+  expanded_description: >
+    With 5 difficulty cards now displayed in a row, text truncates mid-word (e.g. 'Begin ner').
+    Badge labels are cramped and unreadable. Unearned badges display in full color, removing
+    the progression incentive. Empty editable cells are invisible against the dark background.
+    First-time users see a disabled numpad with no instruction. All 5 items are P0/P1 severity
+    and should ship first.
+  success_criteria:
+    - "All 5 difficulty card labels fully readable with no mid-word line breaks"
+    - "Badge row shows emoji-only display; tap reveals name + description"
+    - "Unearned badges rendered grayscale/dimmed; earned badges full color"
+    - "Empty editable cells have a subtle background tint visible in dark mode"
+    - "A 'Tap an empty cell to start' hint appears on puzzle load and disappears after first tap"
+
+features:
+  - id: "S2A-F001"
+    name: "Fix difficulty card text truncation"
+    description: >
+      Switch to a horizontally scrollable row with fixed-width cards (~80dp each). Show 3.5
+      cards with a peek to hint at scrolling. Alternative: abbreviated labels (3×3, 4×4 etc.)
+      as primary with difficulty name as small secondary text.
+    status: "passing"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/ui/DifficultySelectorTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/components/DifficultySelector.kt"
+    priority: 1
+    dependencies: []
+    domain: "frontend"
+    effort_hours: 4
+    severity: "critical"
+    last_attempt:
+      timestamp: "2026-03-14T12:00:00Z"
+      agent: "worker"
+      result: "passing"
+      error: null
+    attempts:
+      - approach: "LazyRow with 84dp fixed-width cards and LaunchedEffect scroll-to-selected"
+        result: "passing"
+
+  - id: "S2A-F002"
+    name: "Fix badge row truncation — emoji-only with tap-to-reveal"
+    description: >
+      Replace the current badge row with large circular emoji badges (🔥 ⭐ 💎 👑) that
+      show no text labels by default. On tap, open a bottom sheet or tooltip showing the
+      badge name and description. Applies to both earned and unearned states.
+    status: "passing"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/ui/BadgeRowTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/screens/HomeScreen.kt"
+    priority: 2
+    dependencies: []
+    domain: "frontend"
+    effort_hours: 3
+    severity: "high"
+    last_attempt:
+      timestamp: "2026-03-14T12:15:00Z"
+      agent: "worker"
+      result: "passing"
+      error: null
+    attempts:
+      - approach: "Remove displayName Text from BadgeItem, add clickable + selectedBadge state"
+        result: "passing"
+
+  - id: "S2A-F003"
+    name: "Gray out unearned badges"
+    description: >
+      Show unearned badges as grayscale/locked. Only full-color when the user has earned
+      the badge. This restores the motivational unlock progression feeling. Integrate with
+      the emoji-only display from S2A-F002.
+    status: "passing"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/ui/BadgeRowTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/screens/HomeScreen.kt"
+    priority: 3
+    dependencies: ["S2A-F002"]
+    domain: "frontend"
+    effort_hours: 2
+    severity: "high"
+    last_attempt:
+      timestamp: "2026-03-14T12:30:00Z"
+      agent: "worker"
+      result: "passing"
+      error: null
+    attempts:
+      - approach: "drawWithCache + Paint ColorMatrix.setToSaturation(0f) — graphicsLayer colorFilter compat workaround"
+        result: "passing"
+
+  - id: "S2A-F004"
+    name: "Add empty cell background tint in dark mode"
+    description: >
+      Apply a very subtle background to empty editable cells:
+      surfaceVariant.copy(alpha = 0.08f) or similar. Enough to see cell boundaries
+      without relying solely on grid lines. Must not make given/fixed cells indistinguishable.
+    status: "passing"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/ui/GridRendererTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/components/GridRenderer.kt"
+    priority: 4
+    dependencies: []
+    domain: "frontend"
+    effort_hours: 1
+    severity: "high"
+    last_attempt:
+      timestamp: "2026-03-14T12:10:00Z"
+      agent: "worker"
+      result: "passing"
+      error: null
+    attempts:
+      - approach: "Change userCellBg from cs.surface to cs.surfaceContainerHigh in gridColorsFromTheme()"
+        result: "passing"
+
+  - id: "S2A-F005"
+    name: "Add tap-a-cell-to-begin hint on puzzle load"
+    description: >
+      Show an animated hint when puzzle loads and numpad is disabled. Options: pulsing glow
+      on first empty cell, or centered text 'Tap an empty cell to start' that disappears
+      after first tap. Recommended: both — pulse on cell + text hint.
+    status: "passing"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/ui/PuzzleScreenTopBarTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/screens/PuzzleScreen.kt"
+    priority: 5
+    dependencies: ["S2A-F004"]
+    domain: "frontend"
+    effort_hours: 2
+    severity: "high"
+    last_attempt:
+      timestamp: "2026-03-14T12:40:00Z"
+      agent: "worker"
+      result: "passing"
+      error: null
+    attempts:
+      - approach: "AnimatedVisibility(selectedCell == null) with fadeIn/fadeOut, pulsingCell stub on GridRenderer"
+        result: "passing"
+
+log:
+  - timestamp: "2026-03-14T11:30:00Z"
+    agent: "initializer"
+    action: "expanded_goal"
+    feature_id: null
+    result: "Initialized Sprint S2A domain memory with 5 critical layout fix features"
+    duration_ms: 0
+  - timestamp: "2026-03-14T12:00:00Z"
+    agent: "worker"
+    action: "completed_feature"
+    feature_id: "S2A-F001"
+    result: "LazyRow with 84dp cards — DifficultySelectorTest.kt + DifficultySelector.kt updated"
+    duration_ms: 0
+  - timestamp: "2026-03-14T12:10:00Z"
+    agent: "worker"
+    action: "completed_feature"
+    feature_id: "S2A-F004"
+    result: "surfaceContainerHigh token for userCellBg — GridRendererTest.kt extended + GridRenderer.kt updated"
+    duration_ms: 0
+  - timestamp: "2026-03-14T12:15:00Z"
+    agent: "worker"
+    action: "completed_feature"
+    feature_id: "S2A-F002"
+    result: "Emoji-only BadgeItem with clickable + selectedBadge state — BadgeRowTest.kt + HomeScreen.kt updated"
+    duration_ms: 0
+  - timestamp: "2026-03-14T12:30:00Z"
+    agent: "worker"
+    action: "completed_feature"
+    feature_id: "S2A-F003"
+    result: "Grayscale unearned badges via drawWithCache + Paint ColorMatrix — HomeScreen.kt updated"
+    duration_ms: 0
+  - timestamp: "2026-03-14T12:40:00Z"
+    agent: "worker"
+    action: "completed_feature"
+    feature_id: "S2A-F005"
+    result: "AnimatedVisibility tap hint + pulsingCell stub — PuzzleScreenTopBarTest.kt extended + PuzzleScreen.kt + GridRenderer.kt updated"
+    duration_ms: 0
+  - timestamp: "2026-03-14T12:45:00Z"
+    agent: "worker"
+    action: "sprint_complete"
+    feature_id: null
+    result: "All 5 S2A features passing. Tests: 447 passing, 0 failing. assembleDebug: SUCCESS"
+    duration_ms: 0
+
+tried:
+  S2A-F003:
+    - approach: "graphicsLayer { colorFilter = ... } lambda with import androidx.compose.ui.graphics.graphicsLayer"
+      result: "Failed: Unresolved reference 'colorFilter' in GraphicsLayerScope — wrong import path"
+    - approach: "Modifier.graphicsLayer(alpha = ..., colorFilter = ...) named-param form"
+      result: "Failed: Unresolved reference 'graphicsLayer' — named-param colorFilter not in older API"
+    - approach: "drawWithCache + Paint with ColorMatrix ColorFilter via saveLayer"
+      result: "passing"
+
+current:
+  feature_id: null
+  started_at: null
+  status: "completed"
+
+tests:
+  total: 447
+  passing: 447
+  failing: 0
+  skipped: 0
+  last_run: "2026-03-14T12:45:00Z"
+  command: "./gradlew test"
+  coverage: null
+
+metadata:
+  workflow_type: "epic"
+  parent_epic: "004-sumgrid-phase-2-fix-layout-breakage"
+  sprint_id: "S2A"
+  source: "worker"
