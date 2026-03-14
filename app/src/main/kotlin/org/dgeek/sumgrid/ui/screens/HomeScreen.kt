@@ -1,5 +1,6 @@
 package org.dgeek.sumgrid.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +11,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -26,6 +34,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -84,6 +95,14 @@ fun HomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.background,
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        )
+                    )
+                )
                 .padding(innerPadding)
                 .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -201,6 +220,25 @@ fun HomeScreen(
 
 @Composable
 private fun StreakDisplay(streak: Int, modifier: Modifier = Modifier) {
+    // Scale-up animation on streak number: 1.0 -> 1.2 -> 1.0 with spring
+    val streakScale by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = spring(dampingRatio = 0.4f, stiffness = 300f),
+        label = "streakScale"
+    )
+
+    // Flame icon pulse: alpha 1.0 -> 0.6 -> 1.0 repeating
+    val infiniteTransition = rememberInfiniteTransition(label = "flamePulse")
+    val flameAlpha by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0.6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1200),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "flameAlpha"
+    )
+
     Surface(
         color = MaterialTheme.colorScheme.secondaryContainer,
         shape = MaterialTheme.shapes.medium,
@@ -213,13 +251,15 @@ private fun StreakDisplay(streak: Int, modifier: Modifier = Modifier) {
         ) {
             Text(
                 text = "\uD83D\uDD25",  // fire emoji
-                style = MaterialTheme.typography.headlineSmall
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.alpha(flameAlpha)
             )
             Text(
                 text = " $streak",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSecondaryContainer
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.scale(streakScale)
             )
             Text(
                 text = if (streak == 1) "  day streak" else "  days streak",
