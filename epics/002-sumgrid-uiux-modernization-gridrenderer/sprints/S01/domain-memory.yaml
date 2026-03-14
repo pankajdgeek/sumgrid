@@ -1,0 +1,189 @@
+# Domain Memory v1.0 — Sprint S01: Quick Wins
+# Epic: 002-sumgrid-uiux-modernization-gridrenderer
+# CRITICAL: This file lives ON DISK. Workers read/write here. No shared context between Workers.
+# Tests are the SOURCE OF TRUTH for feature status.
+
+version: "1.0"
+created: "2026-03-14T04:30:39Z"
+last_updated: "2026-03-14T12:45:00Z"
+
+# === SPRINT GOAL ===
+goal:
+  original_prompt: "Phase 1 — Quick Wins: haptic feedback, animated transitions, Outfit font, predictive back"
+  expanded_description: >
+    Day 2-3 work. Maximum visual impact with minimum APK cost. All four features use
+    Compose built-in APIs with zero additional library dependencies (except the font file
+    itself). S01 depends on S00 being complete first (GridRenderer must use theme tokens
+    before any visual layering makes sense). S01-F001 through S01-F004 are independent
+    of each other and can be implemented in any order. Combined APK impact must stay
+    under 110KB (font is the only asset addition). App must feel noticeably more polished
+    after this sprint — tactile and responsive.
+  success_criteria:
+    - "HapticFeedbackType.LongPress fires on cell tap; HapticFeedbackType.TextHandleMove on number entry; haptic on clear and completion"
+    - "NavHost replaced with AnimatedNavHost; all screen transitions use fadeIn+slideIn/fadeOut+slideOut"
+    - "Outfit Variable font loaded from res/font/; Type.kt uses it for all MaterialTheme.typography styles"
+    - "APK size increase from S01 is <=110KB (font file budget)"
+    - "android:enableOnBackInvokedCallback=true in AndroidManifest.xml; back gesture is fluid"
+    - "All 552+ tests pass after each change"
+  constraints:
+    - "No new library dependencies — all APIs are Compose built-in"
+    - "Font file must be Outfit Variable (not separate weight files) — single file only"
+    - "Haptic feedback must be gated on system haptics enabled — do not override system preference"
+    - "Transition duration should be 300ms or under — no slow transitions"
+    - "S00 must be complete before beginning this sprint"
+
+# === FEATURE BACKLOG ===
+features:
+  - id: "S01-F001"
+    name: "Haptic feedback"
+    description: >
+      Add haptic feedback at four interaction points using LocalHapticFeedback.current:
+      (1) Cell tap: HapticFeedbackType.LongPress on pointerInput tap,
+      (2) Number entry: HapticFeedbackType.TextHandleMove when a number is selected from the keypad,
+      (3) Clear action: HapticFeedbackType.LongPress on the clear/delete button,
+      (4) Puzzle completion: HapticFeedbackType.LongPress when isPuzzleSolved becomes true.
+      Compose's LocalHapticFeedback automatically respects the system vibration setting.
+      Zero APK cost — built into Compose runtime.
+    status: "passing"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/ui/HapticFeedbackTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/screens/PuzzleScreen.kt"
+    priority: 11
+    dependencies: ["S00-F001"]
+    domain: "frontend"
+    last_attempt:
+      timestamp: "2026-03-14T12:40:00Z"
+      agent: "orchestrator"
+      result: "passing"
+      error: null
+    attempts:
+      - approach: "LocalHapticFeedback.current in PuzzleScreen; LongPress on cell tap + clear + completion; TextHandleMove on number entry. 6 HapticFeedbackTest JVM tests pass."
+        result: "Passed: 6/6 HapticFeedbackTest, 317 total JVM unit tests, 0 failures"
+
+  - id: "S01-F002"
+    name: "Animated screen transitions"
+    description: >
+      Configure NavHost with enterTransition, exitTransition, popEnterTransition,
+      popExitTransition using fadeIn/fadeOut + slideIntoContainer/slideOutOfContainer
+      at 300ms tween. All existing navigation routes work identically. Zero APK cost —
+      uses existing navigation-compose API.
+    status: "passing"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/navigation/AnimatedNavTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/navigation/SumGridNavigation.kt"
+    priority: 12
+    dependencies: []
+    domain: "frontend"
+    last_attempt:
+      timestamp: "2026-03-14T12:35:00Z"
+      agent: "orchestrator"
+      result: "passing"
+      error: null
+    attempts:
+      - approach: "Added fadeIn/fadeOut + slideIntoContainer/slideOutOfContainer transitions to NavHost with 300ms tween. 7 AnimatedNavTest JVM tests pass."
+        result: "Passed: 7/7 AnimatedNavTest, 317 total JVM unit tests, 0 failures"
+
+  - id: "S01-F003"
+    name: "Custom typography — Outfit Variable font"
+    description: >
+      Outfit Variable font (~108KB TTF) bundled in res/font/outfit_variable.ttf.
+      OutfitFontFamily created with Font() entries for all weights. All TextStyle
+      definitions in SumGridTypography updated to use OutfitFontFamily.
+    status: "passing"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/ui/theme/TypographyTest.kt"
+    impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/theme/Type.kt"
+    priority: 13
+    dependencies: []
+    domain: "frontend"
+    last_attempt:
+      timestamp: "2026-03-14T12:38:00Z"
+      agent: "orchestrator"
+      result: "passing"
+      error: null
+    attempts:
+      - approach: "Downloaded Outfit-VariableFont_wght.ttf (108KB) to res/font/. Created OutfitFontFamily with 9 weight entries. Replaced all FontFamily.Default in SumGridTypography. 6 TypographyTest JVM tests pass."
+        result: "Passed: 6/6 TypographyTest, 317 total JVM unit tests, 0 failures"
+
+  - id: "S01-F004"
+    name: "Predictive back gesture"
+    description: >
+      Enable Android 13+ predictive back gesture by adding
+      android:enableOnBackInvokedCallback="true" to the <application> tag in
+      AndroidManifest.xml. Graceful no-op on API <33. No APK cost.
+    status: "passing"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/navigation/PredictiveBackTest.kt"
+    impl_file: "app/src/main/AndroidManifest.xml"
+    priority: 14
+    dependencies: []
+    domain: "frontend"
+    last_attempt:
+      timestamp: "2026-03-14T12:30:00Z"
+      agent: "orchestrator"
+      result: "passing"
+      error: null
+    attempts:
+      - approach: "Added android:enableOnBackInvokedCallback='true' to <application> tag. 2 PredictiveBackTest JVM tests pass."
+        result: "Passed: 2/2 PredictiveBackTest, 317 total JVM unit tests, 0 failures"
+
+# === PROGRESS LOG ===
+log:
+  - timestamp: "2026-03-14T04:30:39Z"
+    agent: "initializer"
+    action: "expanded_goal"
+    feature_id: null
+    result: "Initialized S01 domain memory with 4 features: haptics, transitions, font, predictive back"
+    duration_ms: 0
+  - timestamp: "2026-03-14T12:30:00Z"
+    agent: "orchestrator"
+    action: "completed_feature"
+    feature_id: "S01-F004"
+    result: "Predictive back gesture enabled in AndroidManifest.xml. 2 tests pass."
+    duration_ms: 0
+  - timestamp: "2026-03-14T12:35:00Z"
+    agent: "orchestrator"
+    action: "completed_feature"
+    feature_id: "S01-F002"
+    result: "Animated screen transitions configured with fadeIn/fadeOut + slide at 300ms. 7 tests pass."
+    duration_ms: 0
+  - timestamp: "2026-03-14T12:38:00Z"
+    agent: "orchestrator"
+    action: "completed_feature"
+    feature_id: "S01-F003"
+    result: "Outfit Variable font (~108KB) bundled and wired to SumGridTypography. 6 tests pass."
+    duration_ms: 0
+  - timestamp: "2026-03-14T12:40:00Z"
+    agent: "orchestrator"
+    action: "completed_feature"
+    feature_id: "S01-F001"
+    result: "Haptic feedback wired at 4 interaction points in PuzzleScreen. 6 tests pass."
+    duration_ms: 0
+
+tried: {}
+
+# === CURRENT FOCUS ===
+current:
+  feature_id: null
+  started_at: null
+  status: "idle"
+  last_completed: "S01-F001"
+
+# === TEST SUMMARY ===
+tests:
+  total: 317
+  passing: 317
+  failing: 0
+  skipped: 0
+  last_run: "2026-03-14T12:42:00Z"
+  command: "./gradlew :app:testDebugUnitTest"
+  coverage: null
+
+# === METADATA ===
+metadata:
+  workflow_type: "sprint"
+  parent_epic: "002-sumgrid-uiux-modernization-gridrenderer"
+  sprint_id: "S01"
+  source: "initializer"
+  migration_date: null
+  depends_on_sprints: ["S00"]
+  ship_criteria: "App feels noticeably more polished and responsive. APK under 4MB. All tests pass."
+  estimated_effort: "1-2 days"
+  apk_delta_expected: "<=110KB (Outfit font file only)"
+  apk_delta_actual: "~108KB (Outfit Variable font)"
