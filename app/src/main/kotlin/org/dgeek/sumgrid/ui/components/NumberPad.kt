@@ -1,5 +1,7 @@
 package org.dgeek.sumgrid.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -164,15 +167,27 @@ private fun NumberButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val containerColor by animateColorAsState(
+        targetValue = if (enabled) MaterialTheme.colorScheme.primaryContainer
+                      else MaterialTheme.colorScheme.surfaceVariant,
+        animationSpec = tween(durationMillis = 150),
+        label = "numpadContainerColor"
+    )
+    val contentColor by animateColorAsState(
+        targetValue = if (enabled) MaterialTheme.colorScheme.onPrimaryContainer
+                      else MaterialTheme.colorScheme.onSurfaceVariant,
+        animationSpec = tween(durationMillis = 150),
+        label = "numpadContentColor"
+    )
     Button(
         onClick = onClick,
         enabled = enabled,
         shape = RoundedCornerShape(8.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor   = MaterialTheme.colorScheme.onPrimaryContainer,
-            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-            disabledContentColor   = MaterialTheme.colorScheme.onSurfaceVariant
+            containerColor = containerColor,
+            contentColor   = contentColor,
+            disabledContainerColor = containerColor,
+            disabledContentColor   = contentColor
         ),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
         modifier = modifier.semantics { this.contentDescription = contentDescription }
@@ -191,13 +206,19 @@ private fun ClearButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val clearContentColor by animateColorAsState(
+        targetValue = if (enabled) MaterialTheme.colorScheme.error
+                      else MaterialTheme.colorScheme.onSurfaceVariant,
+        animationSpec = tween(durationMillis = 150),
+        label = "clearContentColor"
+    )
     OutlinedButton(
         onClick = onClick,
         enabled = enabled,
         shape = RoundedCornerShape(8.dp),
         colors = ButtonDefaults.outlinedButtonColors(
-            contentColor   = MaterialTheme.colorScheme.error,
-            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            contentColor         = clearContentColor,
+            disabledContentColor = clearContentColor
         ),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
         modifier = modifier.semantics { contentDescription = "Clear cell" }
