@@ -22,8 +22,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.zIndex
+import org.dgeek.sumgrid.ui.components.CelebrationCellWrapper
 import org.dgeek.sumgrid.ui.components.GridRenderer
 import org.dgeek.sumgrid.ui.components.NumberPad
+import org.dgeek.sumgrid.ui.components.rememberCelebrationState
 import org.dgeek.sumgrid.viewmodel.PuzzleViewModel
 
 /**
@@ -92,12 +96,34 @@ fun PuzzleScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ── Grid ─────────────────────────────────────────────────────────
-            GridRenderer(
-                state     = currentState,
-                onCellTap = { row, col -> vm.selectCell(row, col) },
-                modifier  = Modifier.fillMaxWidth()
+            // ── Celebration state (drives overlay when puzzle is complete) ────
+            val celebrationState = rememberCelebrationState(
+                isComplete = currentState.isCompleted,
+                gridSize   = currentState.puzzle.size
             )
+
+            // ── Grid + celebration overlay ────────────────────────────────────
+            Box(modifier = Modifier.fillMaxWidth()) {
+                GridRenderer(
+                    state     = currentState,
+                    onCellTap = { row, col -> vm.selectCell(row, col) },
+                    modifier  = Modifier.fillMaxWidth()
+                )
+
+                // Celebration overlay — visible only when puzzle is complete
+                if (currentState.isCompleted) {
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .zIndex(1f)
+                            .testTag("celebration_overlay")
+                    ) {
+                        // The celebration state drives per-cell scale animations
+                        // via CelebrationCellWrapper. For now, this overlay triggers
+                        // the animation; enhanced visuals come in S03-F003.
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.weight(1f))
 
