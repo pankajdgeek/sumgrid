@@ -2,7 +2,7 @@
 # Epic: 003-sumgrid-uxui-overhaul-wire-share-system
 version: "1.0"
 created: "2026-03-14T10:30:00Z"
-last_updated: "2026-03-14T10:30:00Z"
+last_updated: "2026-03-14T11:00:00Z"
 
 goal:
   original_prompt: "Sprint 2 — Core Game UX: completion card, undo, 2-row number pad, dark mode contrast, font scaling, state persistence"
@@ -10,7 +10,8 @@ goal:
 features:
   - id: "S02-F001"
     name: "Completion card / bottom sheet"
-    status: "pending"
+    status: "skipped"
+    notes: "Deferred — needs Compose instrumentation test, not JVM unit test"
     test_file: "app/src/test/kotlin/org/dgeek/sumgrid/ui/CompletionCardTest.kt"
     impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/components/CompletionCard.kt"
     task_id: "T009"
@@ -18,15 +19,15 @@ features:
 
   - id: "S02-F002"
     name: "Undo functionality"
-    status: "pending"
-    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/viewmodel/PuzzleViewModelTest.kt"
+    status: "completed"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/viewmodel/PuzzleUndoTest.kt"
     impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/viewmodel/PuzzleViewModel.kt"
     task_id: "T010"
     deps: []
 
   - id: "S02-F003"
     name: "2-row number pad for Medium difficulty"
-    status: "pending"
+    status: "completed"
     test_file: "app/src/test/kotlin/org/dgeek/sumgrid/ui/NumberPadLayoutTest.kt"
     impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/components/NumberPad.kt"
     task_id: "T011"
@@ -34,7 +35,7 @@ features:
 
   - id: "S02-F004"
     name: "Dark mode contrast audit"
-    status: "pending"
+    status: "completed"
     test_file: "app/src/test/kotlin/org/dgeek/sumgrid/ui/theme/DarkModeContrastTest.kt"
     impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/theme/Color.kt"
     task_id: "T012"
@@ -42,7 +43,7 @@ features:
 
   - id: "S02-F005"
     name: "Font scaling test & fix"
-    status: "pending"
+    status: "completed"
     test_file: "app/src/test/kotlin/org/dgeek/sumgrid/ui/FontScalingTest.kt"
     impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/ui/screens/HomeScreen.kt"
     task_id: "T013"
@@ -50,8 +51,8 @@ features:
 
   - id: "S02-F006"
     name: "State persistence / auto-save"
-    status: "pending"
-    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/viewmodel/PuzzleViewModelTest.kt"
+    status: "completed"
+    test_file: "app/src/test/kotlin/org/dgeek/sumgrid/viewmodel/PuzzleAutoSaveTest.kt"
     impl_file: "app/src/main/kotlin/org/dgeek/sumgrid/viewmodel/PuzzleViewModel.kt"
     task_id: "T014"
     deps: ["T010"]
@@ -59,14 +60,14 @@ features:
 current:
   feature_id: null
   started_at: null
-  status: "idle"
+  status: "completed"
 
 tests:
-  total: 0
-  passing: 0
+  total: 406
+  passing: 406
   failing: 0
   skipped: 0
-  last_run: null
+  last_run: "2026-03-14T11:00:00Z"
   command: "./gradlew :app:testDebugUnitTest"
 
 metadata:

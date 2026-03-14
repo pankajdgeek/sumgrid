@@ -11,6 +11,13 @@ package org.dgeek.sumgrid.daily
 interface CompletionStore {
     suspend fun save(key: String, state: CompletionState)
     suspend fun get(key: String): CompletionState?
+
+    /** Save in-progress puzzle state (flattened userValues array). */
+    suspend fun saveInProgress(key: String, values: IntArray) {}
+    /** Retrieve in-progress puzzle state, or null if none saved. */
+    suspend fun getInProgress(key: String): IntArray? = null
+    /** Clear in-progress state (called on completion). */
+    suspend fun clearInProgress(key: String) {}
 }
 
 /**

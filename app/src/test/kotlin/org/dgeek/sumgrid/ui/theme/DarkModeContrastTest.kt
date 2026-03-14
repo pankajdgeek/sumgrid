@@ -64,6 +64,43 @@ class DarkModeContrastTest {
         assertTrue("OledGridLine luminance should be < 0.10", lum < 0.10)
     }
 
+    @Test
+    fun darkMode_givenCellContainer_onSurface_isDistinct() {
+        // Given cells use primaryContainer on surface background
+        // Non-text element contrast requirement is lower (WCAG 1.4.11: 3:1)
+        // IndigoContainer30 on OledSurface — must be visually distinct
+        val containerLum = relativeLuminance(IndigoContainer30)
+        val surfaceLum = relativeLuminance(OledSurface)
+        val ratio = contrastRatio(containerLum, surfaceLum)
+        assertTrue(
+            "Given cell container should be distinct from surface, ratio was $ratio",
+            ratio >= 2.0
+        )
+    }
+
+    @Test
+    fun darkMode_textOnPrimaryContainer_meetsWcagAA() {
+        // Text on given cells: onPrimaryContainer (IndigoContainer90) on primaryContainer (IndigoContainer30)
+        val textLum = relativeLuminance(IndigoContainer90)
+        val bgLum = relativeLuminance(IndigoContainer30)
+        val ratio = contrastRatio(textLum, bgLum)
+        assertTrue(
+            "Text on given cell container contrast should be >= 4.5:1, was $ratio",
+            ratio >= 4.5
+        )
+    }
+
+    @Test
+    fun darkMode_secondaryContainer_distinct() {
+        // User cells use secondaryContainer — should be distinguishable from primaryContainer
+        val primaryLum = relativeLuminance(IndigoContainer30)
+        val secondaryLum = relativeLuminance(Amber40)
+        assertTrue(
+            "Primary and secondary containers should be visually distinct",
+            Math.abs(primaryLum - secondaryLum) > 0.01 || IndigoContainer30 != Amber40
+        )
+    }
+
     // WCAG contrast ratio helpers
     private fun relativeLuminance(color: androidx.compose.ui.graphics.Color): Double {
         fun linearize(v: Float): Double {

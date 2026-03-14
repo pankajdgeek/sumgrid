@@ -245,6 +245,11 @@ fun PuzzleScreen(
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     vm.clearCell()
                 },
+                onUndoTap    = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    vm.undo()
+                },
+                canUndo      = vm.canUndo,
                 isVisible    = !currentState.isCompleted,
                 modifier     = Modifier
                     .fillMaxWidth()

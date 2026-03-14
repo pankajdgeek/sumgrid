@@ -123,6 +123,41 @@ class PuzzleViewModel(
     val uiState: StateFlow<PuzzleUiState?> = _uiState.asStateFlow()
 
     // -----------------------------------------------------------------------
+    // Undo history
+    // -----------------------------------------------------------------------
+
+    private val moveHistory: ArrayDeque<Array<IntArray>> = ArrayDeque()
+    private val maxHistory = 50
+
+    /** Whether there are moves to undo. */
+    val canUndo: Boolean get() = moveHistory.isNotEmpty()
+
+    private fun Array<IntArray>.deepCopy(): Array<IntArray> = Array(size) { this[it].copyOf() }
+
+    private fun pushHistory(userValues: Array<IntArray>) {
+        moveHistory.addLast(userValues.deepCopy())
+        if (moveHistory.size > maxHistory) moveHistory.removeFirst()
+    }
+
+    /**
+     * Undo the last cell change. Restores the previous userValues from history.
+     * No-op if history is empty.
+     */
+    fun undo() {
+        if (moveHistory.isEmpty()) return
+        val current = _uiState.value ?: return
+        val previousValues = moveHistory.removeLast()
+        val newState = buildState(
+            puzzle = current.puzzle,
+            userValues = previousValues,
+            selectedCell = current.selectedCell,
+            elapsedSeconds = current.elapsedSeconds
+        )
+        _uiState.value = newState
+        handleCompletionChange(newState)
+    }
+
+    // -----------------------------------------------------------------------
     // Completion tracking
     // -----------------------------------------------------------------------
 
@@ -167,17 +202,47 @@ class PuzzleViewModel(
         val n = puzzle.size
         val userValues = Array(n) { IntArray(n) { 0 } }
         puzzleDate = date
+        moveHistory.clear()
         // When no date is provided (legacy / S01 usage), treat timer as already started
         // so that tickTimer() works unconditionally — preserving S01 behaviour.
         timerStarted = (date == null)
         completionPersisted = false
         _isComplete.value = false
-        _uiState.value = buildState(
-            puzzle = puzzle,
-            userValues = userValues,
-            selectedCell = null,
-            elapsedSeconds = 0L
-        )
+
+        // Attempt to restore in-progress state
+        val store = completionStore
+        val d = date
+        if (store != null && d != null) {
+            val scope = persistScope ?: viewModelScope
+            scope.launch {
+                val key = "completion_${d.toEpochDay()}_${puzzle.difficulty.name}"
+                val saved = store.getInProgress(key)
+                if (saved != null && saved.size == n * n) {
+                    // Restore flattened values into 2D array
+                    val restored = Array(n) { r -> IntArray(n) { c -> saved[r * n + c] } }
+                    _uiState.value = buildState(
+                        puzzle = puzzle,
+                        userValues = restored,
+                        selectedCell = null,
+                        elapsedSeconds = 0L
+                    )
+                    return@launch
+                }
+                _uiState.value = buildState(
+                    puzzle = puzzle,
+                    userValues = userValues,
+                    selectedCell = null,
+                    elapsedSeconds = 0L
+                )
+            }
+        } else {
+            _uiState.value = buildState(
+                puzzle = puzzle,
+                userValues = userValues,
+                selectedCell = null,
+                elapsedSeconds = 0L
+            )
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -241,6 +306,8 @@ class PuzzleViewModel(
         val current = _uiState.value ?: return
         val (row, col) = current.selectedCell ?: return
 
+        pushHistory(current.userValues)
+
         val existingValue = current.userValues[row][col]
         val newValue = if (existingValue == number) 0 else number  // toggle
 
@@ -256,6 +323,7 @@ class PuzzleViewModel(
             elapsedSeconds = current.elapsedSeconds
         )
         _uiState.value = newState
+        autoSaveInProgress(newUserValues, current.puzzle)
 
         // Update isComplete flow and persist on transition to complete
         handleCompletionChange(newState)
@@ -269,6 +337,8 @@ class PuzzleViewModel(
         val current = _uiState.value ?: return
         val (row, col) = current.selectedCell ?: return
 
+        pushHistory(current.userValues)
+
         val newUserValues = Array(current.puzzle.size) { r ->
             current.userValues[r].copyOf()
         }
@@ -281,6 +351,7 @@ class PuzzleViewModel(
             elapsedSeconds = current.elapsedSeconds
         )
         _uiState.value = newState
+        autoSaveInProgress(newUserValues, current.puzzle)
 
         // Re-evaluate completion (clearing a cell may un-complete the puzzle)
         handleCompletionChange(newState)
@@ -329,6 +400,20 @@ class PuzzleViewModel(
     }
 
     // -----------------------------------------------------------------------
+    // Auto-save in-progress state
+    // -----------------------------------------------------------------------
+
+    private fun autoSaveInProgress(userValues: Array<IntArray>, puzzle: Puzzle) {
+        val store = completionStore ?: return
+        val date = puzzleDate ?: return
+        val key = "completion_${date.toEpochDay()}_${puzzle.difficulty.name}"
+        val n = puzzle.size
+        val flat = IntArray(n * n) { i -> userValues[i / n][i % n] }
+        val scope = persistScope ?: viewModelScope
+        scope.launch { store.saveInProgress(key, flat) }
+    }
+
+    // -----------------------------------------------------------------------
     // Internal helpers
     // -----------------------------------------------------------------------
 
@@ -366,16 +451,18 @@ class PuzzleViewModel(
         // Use the injected scope when provided (unit tests pass a TestScope or Unconfined scope).
         // In production, persistScope is null and we use viewModelScope. We avoid calling
         // viewModelScope in non-Android environments because it requires Dispatchers.Main.
+        val key = "completion_${date.toEpochDay()}_${difficulty.name}"
         val scope = persistScope ?: viewModelScope
         scope.launch {
             store.save(
-                "completion_${date.toEpochDay()}_${difficulty.name}",
+                key,
                 org.dgeek.sumgrid.daily.CompletionState(
                     completed = true,
                     elapsedMillis = elapsed,
                     completedAt = System.currentTimeMillis()
                 )
             )
+            store.clearInProgress(key)
         }
     }
 
