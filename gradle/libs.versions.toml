@@ -14,6 +14,7 @@ workManager = "2.10.0"
 navigationCompose = "2.8.5"
 firebaseBom = "33.7.0"
 playReview = "2.0.2"
+coreSplashscreen = "1.0.1"
 # Google services / Crashlytics plugin versions
 googleServices = "4.4.2"
 crashlyticsPlugin = "3.0.2"
@@ -45,6 +46,8 @@ firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics
 firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics-ktx" }
 # Play In-App Review
 play-review = { group = "com.google.android.play", name = "review-ktx", version.ref = "playReview" }
+# Splash Screen
+androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashscreen" }
 # Coroutines (core + test)
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }

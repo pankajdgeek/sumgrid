@@ -82,6 +82,9 @@ dependencies {
     // Play In-App Review
     implementation(libs.play.review)
 
+    // Splash Screen
+    implementation(libs.androidx.core.splashscreen)
+
     // Coroutines
     implementation(libs.kotlinx.coroutines.core)
 
