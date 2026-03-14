@@ -27,7 +27,7 @@ import org.dgeek.sumgrid.engine.models.Puzzle
  * DataStore-backed production implementation.
  * In-memory test implementation: [InMemoryOnboardingRepository].
  */
-class OnboardingRepository(private val dataStore: DataStore<Preferences>) {
+class OnboardingRepository(private val dataStore: DataStore<Preferences>) : OnboardingRepositoryInterface {
 
     private object Keys {
         val LAUNCH_COUNT = intPreferencesKey("onboarding_launch_count")
@@ -103,20 +103,20 @@ class OnboardingRepository(private val dataStore: DataStore<Preferences>) {
         val PUZZLES = listOf(PUZZLE_1, PUZZLE_2, PUZZLE_3)
     }
 
-    suspend fun getLaunchCount(): Int =
+    override suspend fun getLaunchCount(): Int =
         dataStore.data.first()[Keys.LAUNCH_COUNT] ?: 0
 
-    suspend fun incrementLaunchCount() {
+    override suspend fun incrementLaunchCount() {
         dataStore.edit { prefs ->
             val current = prefs[Keys.LAUNCH_COUNT] ?: 0
             prefs[Keys.LAUNCH_COUNT] = current + 1
         }
     }
 
-    suspend fun isComplete(): Boolean =
+    override suspend fun isComplete(): Boolean =
         dataStore.data.first()[Keys.COMPLETE] ?: false
 
-    suspend fun markComplete() {
+    override suspend fun markComplete() {
         dataStore.edit { prefs ->
             prefs[Keys.COMPLETE] = true
         }
@@ -126,7 +126,7 @@ class OnboardingRepository(private val dataStore: DataStore<Preferences>) {
      * Returns the onboarding puzzle for the given [launchCount] (1-indexed),
      * or null if [launchCount] exceeds the number of onboarding puzzles or onboarding is complete.
      */
-    suspend fun getPuzzleForLaunch(launchCount: Int): Puzzle? {
+    override suspend fun getPuzzleForLaunch(launchCount: Int): Puzzle? {
         if (isComplete()) return null
         return PUZZLES.getOrNull(launchCount - 1)
     }

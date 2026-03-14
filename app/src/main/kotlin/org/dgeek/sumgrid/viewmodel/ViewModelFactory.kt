@@ -23,6 +23,11 @@ class ViewModelFactory(
                     completionStore = container.completionStore
                 ) as T
             }
+            modelClass.isAssignableFrom(OnboardingViewModel::class.java) -> {
+                OnboardingViewModel(
+                    onboardingRepository = container.onboardingRepository
+                ) as T
+            }
             else -> throw IllegalArgumentException(
                 "ViewModelFactory: unknown ViewModel class ${modelClass.name}"
             )

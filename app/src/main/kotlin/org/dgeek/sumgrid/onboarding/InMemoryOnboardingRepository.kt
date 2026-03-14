@@ -7,20 +7,20 @@ import org.dgeek.sumgrid.engine.models.Puzzle
  *
  * Mirrors the contract of [OnboardingRepository] without requiring DataStore.
  */
-class InMemoryOnboardingRepository {
+class InMemoryOnboardingRepository : OnboardingRepositoryInterface {
 
     private var launchCount: Int = 0
     private var complete: Boolean = false
 
-    suspend fun getLaunchCount(): Int = launchCount
+    override suspend fun getLaunchCount(): Int = launchCount
 
-    suspend fun incrementLaunchCount() {
+    override suspend fun incrementLaunchCount() {
         launchCount++
     }
 
-    suspend fun isComplete(): Boolean = complete
+    override suspend fun isComplete(): Boolean = complete
 
-    suspend fun markComplete() {
+    override suspend fun markComplete() {
         complete = true
     }
 
@@ -28,7 +28,7 @@ class InMemoryOnboardingRepository {
      * Returns the onboarding puzzle for the given [launchCount] (1-indexed),
      * or null if [launchCount] exceeds the number of onboarding puzzles or onboarding is complete.
      */
-    suspend fun getPuzzleForLaunch(launchCount: Int): Puzzle? {
+    override suspend fun getPuzzleForLaunch(launchCount: Int): Puzzle? {
         if (complete) return null
         return OnboardingRepository.PUZZLES.getOrNull(launchCount - 1)
     }

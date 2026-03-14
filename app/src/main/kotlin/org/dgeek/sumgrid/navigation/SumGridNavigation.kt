@@ -4,6 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -14,8 +20,10 @@ import androidx.navigation.navArgument
 import org.dgeek.sumgrid.AppContainer
 import org.dgeek.sumgrid.engine.models.Difficulty
 import org.dgeek.sumgrid.ui.screens.HomeScreen
+import org.dgeek.sumgrid.ui.screens.OnboardingScreen
 import org.dgeek.sumgrid.ui.screens.PuzzleScreen
 import org.dgeek.sumgrid.viewmodel.HomeViewModel
+import org.dgeek.sumgrid.viewmodel.OnboardingViewModel
 import org.dgeek.sumgrid.viewmodel.PuzzleViewModel
 import org.dgeek.sumgrid.viewmodel.ViewModelFactory
 import java.time.LocalDate
@@ -47,6 +55,7 @@ private class HomeViewModelFactory(
 private object Routes {
     const val HOME = "home"
     const val PUZZLE = "puzzle/{difficulty}"
+    const val ONBOARDING = "onboarding"
 
     fun puzzle(difficulty: Difficulty): String = "puzzle/${difficulty.name}"
 }
@@ -75,11 +84,53 @@ fun SumGridNavHost(
     val navController = rememberNavController()
     val vmFactory = ViewModelFactory(container)
 
+    // Determine the start destination by checking whether onboarding is complete.
+    // produceState suspends until the repository responds, then emits the route.
+    val startDestination by produceState(initialValue = null as String?) {
+        val onboardingComplete = container.onboardingRepository.isComplete()
+        value = if (onboardingComplete) Routes.HOME else Routes.ONBOARDING
+    }
+
+    // Show nothing while we are still determining the start destination.
+    val resolvedStart = startDestination ?: return
+
     NavHost(
         navController = navController,
-        startDestination = Routes.HOME,
+        startDestination = resolvedStart,
         modifier = modifier
     ) {
+        // ── Onboarding ────────────────────────────────────────────────────
+        composable(Routes.ONBOARDING) {
+            val onboardingVm: OnboardingViewModel = viewModel(factory = vmFactory)
+            val puzzleVm: PuzzleViewModel = viewModel(factory = vmFactory)
+
+            // Increment launch count and load the appropriate puzzle once.
+            LaunchedEffect(Unit) {
+                val puzzle = onboardingVm.incrementLaunchAndGetPuzzle()
+                if (puzzle != null) {
+                    puzzleVm.loadPuzzle(puzzle)
+                } else {
+                    // No puzzle available — onboarding already exhausted; go home.
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.ONBOARDING) { inclusive = true }
+                    }
+                }
+            }
+
+            val currentLaunchCount by onboardingVm.launchCount.collectAsState()
+
+            OnboardingScreen(
+                onboardingViewModel = onboardingVm,
+                puzzleViewModel = puzzleVm,
+                onOnboardingComplete = {
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.ONBOARDING) { inclusive = true }
+                    }
+                },
+                isFirstLaunch = (currentLaunchCount == 1)
+            )
+        }
+
         // ── Home ──────────────────────────────────────────────────────────
         composable(Routes.HOME) {
             val homeVm: HomeViewModel = viewModel(
