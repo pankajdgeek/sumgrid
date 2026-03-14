@@ -1,30 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:pathData="M31,63.928c0,0 6.4,-11 12.1,-13.1c7.2,-2.6 26,-1.4 26,-1.4l38.1,38.1L107,108.928l-32,-1L31,63.928z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:endX="85.84757"
-                android:endY="92.4963"
-                android:startX="42.9492"
-                android:startY="49.59793"
-                android:type="linear">
-                <item
-                    android:color="#44000000"
-                    android:offset="0.0" />
-                <item
-                    android:color="#00000000"
-                    android:offset="1.0" />
-            </gradient>
-        </aapt:attr>
-    </path>
+
+    <!-- ============================================================
+         SumGrid Adaptive Icon — Foreground Layer
+         A minimal 3×3 grid with numbers and an amber sum indicator.
+         Content centered in the 72×72 safe zone (offset 18,18).
+         ============================================================ -->
+
+    <!-- 3×3 Grid lines (white, semi-transparent) -->
+    <!-- Outer border -->
     <path
-        android:fillColor="#FFFFFF"
-        android:fillType="nonZero"
-        android:pathData="M65.3,45.828l3.8,-6.6c0.2,-0.4 0.1,-0.9 -0.3,-1.1c-0.4,-0.2 -0.9,-0.1 -1.1,0.3l-3.9,6.7c-6.3,-2.8 -13.4,-2.8 -19.7,0l-3.9,-6.7c-0.2,-0.4 -0.7,-0.5 -1.1,-0.3C38.8,38.328 38.7,38.828 38.9,39.228l3.8,6.6C36.2,49.428 31.7,56.028 31,63.928h46C76.3,56.028 71.8,49.428 65.3,45.828zM43.4,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2c-0.3,-0.7 -0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C45.3,56.528 44.5,57.328 43.4,57.328L43.4,57.328zM64.6,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2s-0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C66.5,56.528 65.6,57.328 64.6,57.328L64.6,57.328z"
-        android:strokeWidth="1"
-        android:strokeColor="#00000000" />
+        android:pathData="M28,28h52v52H28z"
+        android:fillColor="#00000000"
+        android:strokeWidth="2"
+        android:strokeColor="#DDFFFFFF" />
+    <!-- Vertical dividers -->
+    <path
+        android:pathData="M45.33,28L45.33,80"
+        android:fillColor="#00000000"
+        android:strokeWidth="1.5"
+        android:strokeColor="#99FFFFFF" />
+    <path
+        android:pathData="M62.67,28L62.67,80"
+        android:fillColor="#00000000"
+        android:strokeWidth="1.5"
+        android:strokeColor="#99FFFFFF" />
+    <!-- Horizontal dividers -->
+    <path
+        android:pathData="M28,45.33L80,45.33"
+        android:fillColor="#00000000"
+        android:strokeWidth="1.5"
+        android:strokeColor="#99FFFFFF" />
+    <path
+        android:pathData="M28,62.67L80,62.67"
+        android:fillColor="#00000000"
+        android:strokeWidth="1.5"
+        android:strokeColor="#99FFFFFF" />
+
+    <!-- Given cell highlights (indigo-light fill) -->
+    <!-- Top-left cell: "4" -->
+    <path
+        android:fillColor="#33BBC2FF"
+        android:pathData="M28,28h17.33v17.33H28z" />
+    <!-- Middle-center cell: "3" -->
+    <path
+        android:fillColor="#33BBC2FF"
+        android:pathData="M45.33,45.33h17.34v17.34H45.33z" />
+    <!-- Bottom-right cell: "5" -->
+    <path
+        android:fillColor="#33BBC2FF"
+        android:pathData="M62.67,62.67h17.33v17.33H62.67z" />
+
+    <!-- Numbers in cells (white, bold) -->
+    <!-- Row 1: 4, _, 2 -->
+    <path
+        android:fillColor="#EEFFFFFF"
+        android:pathData="M33.5,42L33.5,33.5L36,33.5L36,35L34.6,35L34.6,37.5L36,37.5L36,39L34.6,39L34.6,42L33.5,42z
+                          M36,37.5L36,39L37.5,39L37.5,42L38.5,42L38.5,37.5L36,37.5z" />
+
+    <!-- Row 1, Col 3: "2" -->
+    <path
+        android:fillColor="#BBFFFFFF"
+        android:pathData="M68,33.5L73,33.5L73,35L69.1,35L69.1,37L73,37L73,42L68,42L68,40.5L71.9,40.5L71.9,38.5L68,38.5L68,33.5z" />
+
+    <!-- Row 2, Col 2: "3" -->
+    <path
+        android:fillColor="#EEFFFFFF"
+        android:pathData="M50.5,50.8L55.5,50.8L55.5,52.3L51.6,52.3L51.6,54L55.5,54L55.5,55.5L51.6,55.5L51.6,57.2L55.5,57.2L55.5,58.7L50.5,58.7L50.5,50.8z" />
+
+    <!-- Row 3, Col 3: "5" -->
+    <path
+        android:fillColor="#EEFFFFFF"
+        android:pathData="M68,68L73,68L73,69.5L69.1,69.5L69.1,71.5L73,71.5L73,76.5L68,76.5L68,75L71.9,75L71.9,73L68,73L68,68z" />
+
+    <!-- Row 3, Col 1: "1" -->
+    <path
+        android:fillColor="#BBFFFFFF"
+        android:pathData="M35.5,68L36.5,68L36.5,76.5L35.5,76.5L35.5,68z" />
+
+    <!-- Sum targets on right side (amber) -->
+    <!-- Row 1 sum: "9" -->
+    <path
+        android:fillColor="#EFC400"
+        android:pathData="M84,33.5L89,33.5L89,42L88,42L88,38.5L84,38.5L84,33.5z
+                          M85,34.5L85,37.5L88,37.5L88,34.5L85,34.5z" />
+
+    <!-- Row 3 sum with check: amber checkmark -->
+    <path
+        android:fillColor="#EFC400"
+        android:strokeWidth="0"
+        android:pathData="M83,72L86,76L92,67L90.5,66L86,72.5L84.5,70.5z" />
+
+    <!-- Column targets below (amber) -->
+    <!-- Col 2 sum with check -->
+    <path
+        android:fillColor="#EFC400"
+        android:pathData="M49,84L52,88L58,79L56.5,78L52,84.5L50.5,82.5z" />
+
+    <!-- Sigma symbol (Σ) as brand mark — top-right area, subtle -->
+    <path
+        android:fillColor="#55FFFFFF"
+        android:pathData="M86,22L96,22L96,24L90,24L93,27L90,30L96,30L96,32L86,32L86,30L91,27L86,24z" />
+
 </vector>

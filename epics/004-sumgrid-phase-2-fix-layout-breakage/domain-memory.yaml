@@ -1,0 +1,109 @@
+# Domain Memory v1.0 — Epic Level
+version: "1.0"
+created: "2026-03-14T11:30:00Z"
+last_updated: "2026-03-14T11:30:00Z"
+
+goal:
+  original_prompt: "SumGrid Phase 2: fix layout breakage from 5-difficulty expansion, badge truncation, empty cell visibility, puzzle screen dead space, and visual polish — based on sumgrid-phase2-improvements.md"
+  expanded_description: >
+    Phase 1 shipped the structural features (back button, undo, 2-row number pad, badges, new
+    difficulties Hard/Expert, share flow). Phase 2 addresses the layout breakage caused by
+    adding more content to screens designed for fewer items, plus visual gaps that remain.
+    The single most urgent issue is difficulty card text truncation — text visibly breaks
+    mid-word on all devices. Three sprints cover: critical layout fixes (2A), layout and
+    spacing polish (2B), and UX enhancements (2C). Total estimate ~48h.
+  success_criteria:
+    - "Difficulty card labels never truncate — all 5 cards readable on any phone width"
+    - "Badge row labels fully visible; earned vs. unearned state visually distinct"
+    - "Empty grid cells visible against dark background without relying solely on grid lines"
+    - "Puzzle screen has no dead space — grid and numpad are vertically centered"
+    - "First-time user sees a clear hint to tap a cell before the numpad activates"
+    - "Home screen scrollable and not overflowing on short devices (e.g., Oppo)"
+    - "Today's Puzzles row readable with 5 difficulties via abbreviations or progress bar"
+    - "Timer co-located in TopAppBar; vertical space freed on puzzle screen"
+    - "Undo/clear visually distinct from digit buttons in 2-row numpad"
+    - "Zero-streak shows motivational text instead of '0 days streak' with a pulsing flame"
+    - "Play button uses amber/tertiary CTA color to stand out as primary action"
+    - "Completed puzzle difficulty cards show a visual completion indicator"
+    - "Badge detail bottom sheet opens on badge tap with name and progress info"
+    - "dgeek footer removed or wired to a real URL"
+  constraints:
+    - "Android Kotlin + Jetpack Compose codebase"
+    - "Must work on narrow devices (Oppo screen width)"
+    - "Dark mode is primary target; light mode must not regress"
+    - "Design token compliance — no hardcoded hex/rgb values"
+    - "No new dependencies without explicit approval"
+    - "Existing functionality must not regress (all 5 difficulties, share, undo)"
+
+sprints:
+  S2A:
+    name: "Critical Layout Fixes"
+    estimate_hours: 12
+    priority: 1
+    domain_memory: "sprints/S2A/domain-memory.yaml"
+    status: "untested"
+    description: "Fix the most visually broken issues — difficulty card truncation, badge truncation, gray unearned badges, empty cell tint, tap-to-begin hint."
+    features:
+      - "S2A-F001"
+      - "S2A-F002"
+      - "S2A-F003"
+      - "S2A-F004"
+      - "S2A-F005"
+
+  S2B:
+    name: "Layout and Spacing Polish"
+    estimate_hours: 16
+    priority: 2
+    domain_memory: "sprints/S2B/domain-memory.yaml"
+    status: "untested"
+    description: "Eliminate dead space on puzzle screen, make home scrollable, condense today's puzzles row, move timer, widen grid, style action buttons, fix zero-streak, update play button color, improve card visibility."
+    features:
+      - "S2B-F001"
+      - "S2B-F002"
+      - "S2B-F003"
+      - "S2B-F004"
+      - "S2B-F005"
+      - "S2B-F006"
+      - "S2B-F007"
+      - "S2B-F008"
+      - "S2B-F009"
+    depends_on: ["S2A"]
+
+  S2C:
+    name: "UX Enhancements"
+    estimate_hours: 20
+    priority: 3
+    domain_memory: "sprints/S2C/domain-memory.yaml"
+    status: "untested"
+    description: "Completed puzzle overlay in difficulty selector, badge detail bottom sheet, collapsible badge row, numpad enable/disable animation, dgeek footer fix, first-cell pulse animation."
+    features:
+      - "S2C-F001"
+      - "S2C-F002"
+      - "S2C-F003"
+      - "S2C-F004"
+      - "S2C-F005"
+      - "S2C-F006"
+    depends_on: ["S2A", "S2B"]
+
+log:
+  - timestamp: "2026-03-14T11:30:00Z"
+    agent: "initializer"
+    action: "expanded_goal"
+    feature_id: null
+    result: "Initialized epic domain memory with 3 sprints and 20 total features from sumgrid-phase2-improvements.md"
+    duration_ms: 0
+
+current:
+  sprint_id: null
+  feature_id: null
+  started_at: null
+  status: "idle"
+
+metadata:
+  workflow_type: "epic"
+  parent_epic: null
+  sprint_count: 3
+  total_features: 20
+  source: "initializer"
+  reference_doc: "sumgrid-phase2-improvements.md"
+  device_context: "Oppo (dark mode), post-Phase-1 build, March 14 2026"
