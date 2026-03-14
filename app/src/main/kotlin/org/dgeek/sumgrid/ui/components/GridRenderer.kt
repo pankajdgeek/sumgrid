@@ -5,6 +5,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -24,18 +25,62 @@ import org.dgeek.sumgrid.viewmodel.PuzzleUiState
 import org.dgeek.sumgrid.viewmodel.SumIndicatorColor
 
 // ---------------------------------------------------------------------------
-// Color constants derived from the SumGrid design token palette
+// GridColors — theme-derived color parameters for the grid
 // ---------------------------------------------------------------------------
 
-private val ColorGivenCellBg   = Color(0xFFDDE1FF)  // IndigoContainer90 — given cell tint
-private val ColorUserCellBg    = Color(0xFFFFFBFF)  // Neutral99 — user-fillable cell
-private val ColorGridLine      = Color(0xFF1B1B1F)  // Neutral10 — dark grid lines
-private val ColorSelectedBorder = Color(0xFFEFC400) // Amber80 — selected cell highlight
-private val ColorCellText      = Color(0xFF1B1B1F)  // Neutral10 — cell number text
-private val ColorGivenText     = Color(0xFF0001AC)  // Indigo20 — slightly blue given numbers
-private val ColorSumGreen      = Color(0xFF1B6C2E)  // semantic success green
-private val ColorSumRed        = Color(0xFFBA1A1A)  // ErrorRed40
-private val ColorSumGray       = Color(0xFF49454F)  // muted gray for incomplete sums
+/**
+ * Holds all 9 colors used to render the SumGrid Canvas grid.
+ *
+ * Use [defaults] for the original hardcoded palette, or [gridColorsFromTheme]
+ * inside a Composable to derive colors from [MaterialTheme.colorScheme].
+ */
+data class GridColors(
+    val givenCellBg: Color,
+    val userCellBg: Color,
+    val gridLine: Color,
+    val selectedBorder: Color,
+    val cellText: Color,
+    val givenText: Color,
+    val sumGreen: Color,
+    val sumRed: Color,
+    val sumGray: Color
+) {
+    companion object {
+        /** Returns a [GridColors] populated with the original SumGrid design-token palette. */
+        fun defaults(): GridColors = GridColors(
+            givenCellBg    = Color(0xFFDDE1FF),  // IndigoContainer90 — given cell tint
+            userCellBg     = Color(0xFFFFFBFF),  // Neutral99 — user-fillable cell
+            gridLine       = Color(0xFF1B1B1F),  // Neutral10 — dark grid lines
+            selectedBorder = Color(0xFFEFC400),  // Amber80 — selected cell highlight
+            cellText       = Color(0xFF1B1B1F),  // Neutral10 — cell number text
+            givenText      = Color(0xFF0001AC),  // Indigo20 — slightly blue given numbers
+            sumGreen       = Color(0xFF1B6C2E),  // semantic success green
+            sumRed         = Color(0xFFBA1A1A),  // ErrorRed40
+            sumGray        = Color(0xFF49454F)   // muted gray for incomplete sums
+        )
+    }
+}
+
+/**
+ * Returns a [GridColors] derived from the current [MaterialTheme.colorScheme].
+ *
+ * Must be called inside a Composable context.
+ */
+@Composable
+fun gridColorsFromTheme(): GridColors {
+    val cs = MaterialTheme.colorScheme
+    return GridColors(
+        givenCellBg    = cs.primaryContainer,
+        userCellBg     = cs.surface,
+        gridLine       = cs.onSurface,
+        selectedBorder = cs.secondary,
+        cellText       = cs.onSurface,
+        givenText      = cs.primary,
+        sumGreen       = cs.secondary,        // interim — tertiary mapping planned for S02
+        sumRed         = cs.error,
+        sumGray        = cs.onSurfaceVariant
+    )
+}
 
 /**
  * Compose Canvas-based grid renderer for a SumGrid puzzle.
@@ -60,6 +105,7 @@ fun GridRenderer(
     outerPaddingDp: Float = 16f
 ) {
     val textMeasurer = rememberTextMeasurer()
+    val colors = gridColorsFromTheme()
     val n = state.puzzle.size
 
     // Reserve space: grid is NxN cells; below add one extra row for col-sum labels.
@@ -91,7 +137,8 @@ fun GridRenderer(
             state = state,
             n = n,
             cellSize = cellSize,
-            textMeasurer = textMeasurer
+            textMeasurer = textMeasurer,
+            colors = colors
         )
     }
 }
@@ -104,7 +151,8 @@ private fun DrawScope.drawGrid(
     state: PuzzleUiState,
     n: Int,
     cellSize: Float,
-    textMeasurer: TextMeasurer
+    textMeasurer: TextMeasurer,
+    colors: GridColors
 ) {
     // ── Cell backgrounds ────────────────────────────────────────────────────
     for (r in 0 until n) {
@@ -112,8 +160,8 @@ private fun DrawScope.drawGrid(
             val isGiven    = state.puzzle.cells[r][c].isGiven
             val isSelected = state.selectedCell == r to c
             val bg = when {
-                isGiven    -> ColorGivenCellBg
-                else       -> ColorUserCellBg
+                isGiven    -> colors.givenCellBg
+                else       -> colors.userCellBg
             }
             drawRect(
                 color = bg,
@@ -124,7 +172,7 @@ private fun DrawScope.drawGrid(
             // Selected cell — amber border overlay
             if (isSelected) {
                 drawRect(
-                    color = ColorSelectedBorder,
+                    color = colors.selectedBorder,
                     topLeft = Offset(c * cellSize, r * cellSize),
                     size    = Size(cellSize, cellSize),
                     style   = Stroke(width = 4f)
@@ -139,7 +187,7 @@ private fun DrawScope.drawGrid(
             val value = state.displayValueAt(r, c)
             if (value != 0) {
                 val isGiven = state.puzzle.cells[r][c].isGiven
-                val textColor = if (isGiven) ColorGivenText else ColorCellText
+                val textColor = if (isGiven) colors.givenText else colors.cellText
                 drawCenteredText(
                     text        = value.toString(),
                     textColor   = textColor,
@@ -162,7 +210,7 @@ private fun DrawScope.drawGrid(
     // Horizontal lines
     for (r in 0..n) {
         drawLine(
-            color       = ColorGridLine,
+            color       = colors.gridLine,
             start       = Offset(0f, r * cellSize),
             end         = Offset(gridWidth, r * cellSize),
             strokeWidth = strokeWidth
@@ -171,7 +219,7 @@ private fun DrawScope.drawGrid(
     // Vertical lines
     for (c in 0..n) {
         drawLine(
-            color       = ColorGridLine,
+            color       = colors.gridLine,
             start       = Offset(c * cellSize, 0f),
             end         = Offset(c * cellSize, gridHeight),
             strokeWidth = strokeWidth
@@ -182,7 +230,7 @@ private fun DrawScope.drawGrid(
     val labelFontSize = (cellSize * 0.32f).coerceIn(10f, 22f)
     for (r in 0 until n) {
         val indicator = state.rowSumIndicators[r]
-        val labelColor = indicatorColor(indicator)
+        val labelColor = indicatorColor(indicator, colors)
         val labelText = formatSumLabel(state.puzzle.rowTargets[r], indicator)
         // Position: right of the last cell, centred vertically in the row
         val labelX = n * cellSize + cellSize * 0.08f
@@ -202,7 +250,7 @@ private fun DrawScope.drawGrid(
     // ── Column sum labels (below grid) ──────────────────────────────────────
     for (c in 0 until n) {
         val indicator = state.colSumIndicators[c]
-        val labelColor = indicatorColor(indicator)
+        val labelColor = indicatorColor(indicator, colors)
         val labelText = formatSumLabel(state.puzzle.colTargets[c], indicator)
         val labelX = c * cellSize
         val labelY = n * cellSize + cellSize * 0.05f
@@ -244,10 +292,10 @@ private fun DrawScope.drawCenteredText(
     )
 }
 
-private fun indicatorColor(indicator: SumIndicatorColor): Color = when (indicator) {
-    SumIndicatorColor.GREEN -> ColorSumGreen
-    SumIndicatorColor.RED   -> ColorSumRed
-    SumIndicatorColor.GRAY  -> ColorSumGray
+private fun indicatorColor(indicator: SumIndicatorColor, colors: GridColors): Color = when (indicator) {
+    SumIndicatorColor.GREEN -> colors.sumGreen
+    SumIndicatorColor.RED   -> colors.sumRed
+    SumIndicatorColor.GRAY  -> colors.sumGray
 }
 
 /**
