@@ -84,7 +84,7 @@ fun gridColorsFromTheme(): GridColors {
         selectedBorder = cs.secondary,
         cellText       = cs.onSurface,
         givenText      = cs.primary,
-        sumGreen       = cs.secondary,        // interim — tertiary mapping planned for S02
+        sumGreen       = cs.tertiary,
         sumRed         = cs.error,
         sumGray        = cs.onSurfaceVariant
     )

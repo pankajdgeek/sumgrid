@@ -19,11 +19,26 @@ private val DarkColorScheme = darkColorScheme(
     onSecondary = Neutral10,
     secondaryContainer = Amber40,
     onSecondaryContainer = Amber90,
+    tertiary = WarmAmber80,
+    onTertiary = WarmAmber10,
+    tertiaryContainer = WarmAmberContainer30,
+    onTertiaryContainer = WarmAmber90,
     error = ErrorRed80,
-    background = Neutral10,
+    onError = OnError20,
+    errorContainer = OnError30,
+    onErrorContainer = ErrorRed90,
+    background = OledBlack,
     onBackground = Neutral90,
-    surface = Neutral10,
-    onSurface = Neutral90
+    surface = OledSurface,
+    onSurface = Neutral90,
+    surfaceVariant = NeutralVariant30,
+    onSurfaceVariant = NeutralVariant80,
+    outline = NeutralVariant60,
+    outlineVariant = NeutralVariant30,
+    inverseSurface = InverseSurface,
+    inverseOnSurface = InverseOnSurface,
+    inversePrimary = InversePrimary,
+    scrim = Scrim
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -35,11 +50,26 @@ private val LightColorScheme = lightColorScheme(
     onSecondary = Neutral99,
     secondaryContainer = Amber90,
     onSecondaryContainer = Amber40,
+    tertiary = WarmAmber40,
+    onTertiary = Neutral99,
+    tertiaryContainer = WarmAmberContainer90,
+    onTertiaryContainer = WarmAmber10,
     error = ErrorRed40,
+    onError = Neutral99,
+    errorContainer = ErrorRed90,
+    onErrorContainer = OnError20,
     background = Neutral99,
     onBackground = Neutral10,
     surface = Neutral99,
-    onSurface = Neutral10
+    onSurface = Neutral10,
+    surfaceVariant = NeutralVariant90,
+    onSurfaceVariant = NeutralVariant30,
+    outline = NeutralVariant50,
+    outlineVariant = NeutralVariant80,
+    inverseSurface = Neutral20,
+    inverseOnSurface = Neutral95,
+    inversePrimary = Indigo80,
+    scrim = Scrim
 )
 
 /**
