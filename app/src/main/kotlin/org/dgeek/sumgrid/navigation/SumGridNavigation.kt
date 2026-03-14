@@ -12,6 +12,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -97,7 +101,31 @@ fun SumGridNavHost(
     NavHost(
         navController = navController,
         startDestination = resolvedStart,
-        modifier = modifier
+        modifier = modifier,
+        enterTransition = {
+            fadeIn(tween(300)) + slideIntoContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                animationSpec = tween(300)
+            )
+        },
+        exitTransition = {
+            fadeOut(tween(300)) + slideOutOfContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                animationSpec = tween(300)
+            )
+        },
+        popEnterTransition = {
+            fadeIn(tween(300)) + slideIntoContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.End,
+                animationSpec = tween(300)
+            )
+        },
+        popExitTransition = {
+            fadeOut(tween(300)) + slideOutOfContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.End,
+                animationSpec = tween(300)
+            )
+        }
     ) {
         // ── Onboarding ────────────────────────────────────────────────────
         composable(Routes.ONBOARDING) {
