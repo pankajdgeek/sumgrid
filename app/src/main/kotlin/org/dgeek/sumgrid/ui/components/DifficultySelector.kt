@@ -4,18 +4,22 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
@@ -28,19 +32,21 @@ import androidx.compose.ui.unit.dp
 import org.dgeek.sumgrid.engine.models.Difficulty
 
 /**
- * Row of three difficulty selection cards: Beginner, Easy, Medium.
+ * Horizontally scrollable row of difficulty selection cards: Beginner, Easy, Medium, Hard, Expert.
  *
  * Each card displays:
  *  - Difficulty label
- *  - Grid size (e.g., 3x3)
+ *  - Grid size (e.g., 3×3)
  *  - Estimated solve time
  *
- * The currently selected difficulty is highlighted with a primary-colored border
- * and elevated surface.
+ * Cards have a fixed width of 84dp so all 5 labels render without truncation.
+ * Approximately 3–4 cards are visible at 320dp width; swipe reveals the rest.
+ *
+ * The selected card auto-scrolls into view via [LaunchedEffect].
  *
  * @param selectedDifficulty     The currently active difficulty, or null if none selected.
  * @param onDifficultySelected   Callback invoked when a card is tapped.
- * @param modifier               Optional modifier for the outer Row.
+ * @param modifier               Optional modifier for the outer LazyRow.
  */
 @Composable
 fun DifficultySelector(
@@ -48,17 +54,30 @@ fun DifficultySelector(
     onDifficultySelected: (Difficulty) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
+    val difficulties = Difficulty.entries
+    val listState = rememberLazyListState()
+
+    // Auto-scroll to keep the selected card in view whenever selection changes.
+    LaunchedEffect(selectedDifficulty) {
+        val index = difficulties.indexOf(selectedDifficulty)
+        if (index >= 0) {
+            listState.animateScrollToItem(index)
+        }
+    }
+
+    LazyRow(
+        state = listState,
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        contentPadding = PaddingValues(horizontal = 0.dp)
     ) {
-        for (difficulty in Difficulty.entries) {
+        itemsIndexed(difficulties) { _, difficulty ->
             DifficultyCard(
                 difficulty = difficulty,
                 isSelected = difficulty == selectedDifficulty,
                 onClick = { onDifficultySelected(difficulty) },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.width(84.dp)
             )
         }
     }
@@ -106,7 +125,6 @@ private fun DifficultyCard(
         colors = CardDefaults.cardColors(containerColor = containerColor),
         shape = RoundedCornerShape(12.dp),
         modifier = modifier
-            .widthIn(min = 80.dp)
             .border(
                 width = borderWidth,
                 color = borderColor,
