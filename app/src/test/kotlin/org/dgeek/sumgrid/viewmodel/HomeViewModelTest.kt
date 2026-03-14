@@ -116,10 +116,10 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun initialState_hasThreePuzzleStatuses() = runTest {
+    fun initialState_hasFivePuzzleStatuses() = runTest {
         testDispatcher.scheduler.advanceUntilIdle()
         val state = vm.uiState.value
-        assertEquals(3, state.puzzleStatuses.size)
+        assertEquals(5, state.puzzleStatuses.size)
     }
 
     @Test
@@ -229,9 +229,9 @@ class HomeViewModelTest {
     // -----------------------------------------------------------------------
 
     @Test
-    fun puzzleStatuses_orderedAsBEGINNER_EASY_MEDIUM() = runTest {
+    fun puzzleStatuses_orderedByDifficultyEnum() = runTest {
         testDispatcher.scheduler.advanceUntilIdle()
         val difficulties = vm.uiState.value.puzzleStatuses.map { it.difficulty }
-        assertEquals(listOf(Difficulty.BEGINNER, Difficulty.EASY, Difficulty.MEDIUM), difficulties)
+        assertEquals(listOf(Difficulty.BEGINNER, Difficulty.EASY, Difficulty.MEDIUM, Difficulty.HARD, Difficulty.EXPERT), difficulties)
     }
 }

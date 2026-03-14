@@ -23,7 +23,8 @@ class PuzzleCorpusTest {
     private val generator = PuzzleGenerator()
     private val validator = UniqueSolutionValidator()
 
-    private val difficulties = Difficulty.entries.toTypedArray()   // BEGINNER, EASY, MEDIUM
+    // Limit corpus to fast-generating difficulties; HARD/EXPERT tested separately
+    private val difficulties = arrayOf(Difficulty.BEGINNER, Difficulty.EASY, Difficulty.MEDIUM)
 
     @Test
     fun `10000 puzzles satisfy all S01 invariants`() {

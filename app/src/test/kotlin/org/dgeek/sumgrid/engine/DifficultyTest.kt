@@ -69,9 +69,11 @@ class DifficultyTest {
     @Test
     fun allDifficultiesPresent() {
         val values = Difficulty.values()
-        assertEquals(3, values.size)
+        assertEquals(5, values.size)
         assertEquals(Difficulty.BEGINNER, values[0])
         assertEquals(Difficulty.EASY, values[1])
         assertEquals(Difficulty.MEDIUM, values[2])
+        assertEquals(Difficulty.HARD, values[3])
+        assertEquals(Difficulty.EXPERT, values[4])
     }
 }

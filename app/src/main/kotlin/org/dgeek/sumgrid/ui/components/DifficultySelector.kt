@@ -158,10 +158,14 @@ private fun Difficulty.displayLabel(): String = when (this) {
     Difficulty.BEGINNER -> "Beginner"
     Difficulty.EASY     -> "Easy"
     Difficulty.MEDIUM   -> "Medium"
+    Difficulty.HARD     -> "Hard"
+    Difficulty.EXPERT   -> "Expert"
 }
 
 private fun Difficulty.estimatedTime(): String = when (this) {
     Difficulty.BEGINNER -> "1-2 min"
     Difficulty.EASY     -> "3-5 min"
     Difficulty.MEDIUM   -> "5-10 min"
+    Difficulty.HARD     -> "10-20 min"
+    Difficulty.EXPERT   -> "15-30 min"
 }

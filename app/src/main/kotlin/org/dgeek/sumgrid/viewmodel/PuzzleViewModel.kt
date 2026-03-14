@@ -55,7 +55,11 @@ data class PuzzleUiState(
     /** True when all cells are filled and all row/col sums match targets. */
     val isCompleted: Boolean,
     /** Elapsed seconds since the timer started (first cell tap). */
-    val elapsedSeconds: Long
+    val elapsedSeconds: Long,
+    /** Whether pencil/notes mode is active. */
+    val isNotesMode: Boolean = false,
+    /** Pencil note candidates per cell. Size = puzzle.size x puzzle.size. */
+    val notesValues: Array<Array<Set<Int>>> = emptyArray()
 ) {
     /** Convenience: combined display value for a cell (given value or user value). */
     fun displayValueAt(row: Int, col: Int): Int {
@@ -73,9 +77,14 @@ data class PuzzleUiState(
         if (colSumIndicators != other.colSumIndicators) return false
         if (isCompleted != other.isCompleted) return false
         if (elapsedSeconds != other.elapsedSeconds) return false
+        if (isNotesMode != other.isNotesMode) return false
         if (userValues.size != other.userValues.size) return false
         for (i in userValues.indices) {
             if (!userValues[i].contentEquals(other.userValues[i])) return false
+        }
+        if (notesValues.size != other.notesValues.size) return false
+        for (i in notesValues.indices) {
+            if (!notesValues[i].contentEquals(other.notesValues[i])) return false
         }
         return true
     }
@@ -87,7 +96,9 @@ data class PuzzleUiState(
         result = 31 * result + colSumIndicators.hashCode()
         result = 31 * result + isCompleted.hashCode()
         result = 31 * result + elapsedSeconds.hashCode()
+        result = 31 * result + isNotesMode.hashCode()
         result = 31 * result + userValues.fold(1) { acc, row -> 31 * acc + row.contentHashCode() }
+        result = 31 * result + notesValues.fold(1) { acc, row -> 31 * acc + row.contentHashCode() }
         return result
     }
 }
@@ -123,10 +134,47 @@ class PuzzleViewModel(
     val uiState: StateFlow<PuzzleUiState?> = _uiState.asStateFlow()
 
     // -----------------------------------------------------------------------
+    // Notes mode
+    // -----------------------------------------------------------------------
+
+    private var _isNotesMode = false
+
+    /** Toggle pencil/notes mode on or off. */
+    fun toggleNotesMode() {
+        _isNotesMode = !_isNotesMode
+        _uiState.update { state ->
+            state?.copy(isNotesMode = _isNotesMode)
+        }
+    }
+
+    /**
+     * Add or remove a pencil note digit for the selected cell.
+     * Only works when notes mode is active. Toggles the digit in the set.
+     */
+    fun enterNote(digit: Int) {
+        if (!_isNotesMode) return
+        val current = _uiState.value ?: return
+        val (row, col) = current.selectedCell ?: return
+        if (current.puzzle.cells[row][col].isGiven) return
+
+        pushSnapshot(current)
+
+        val newNotes = current.notesValues.deepCopyNotes()
+        val existing = newNotes[row][col]
+        newNotes[row][col] = if (digit in existing) existing - digit else existing + digit
+        _uiState.value = current.copy(notesValues = newNotes)
+    }
+
+    // -----------------------------------------------------------------------
     // Undo history
     // -----------------------------------------------------------------------
 
-    private val moveHistory: ArrayDeque<Array<IntArray>> = ArrayDeque()
+    private data class Snapshot(
+        val userValues: Array<IntArray>,
+        val notesValues: Array<Array<Set<Int>>>
+    )
+
+    private val moveHistory: ArrayDeque<Snapshot> = ArrayDeque()
     private val maxHistory = 50
 
     /** Whether there are moves to undo. */
@@ -134,25 +182,37 @@ class PuzzleViewModel(
 
     private fun Array<IntArray>.deepCopy(): Array<IntArray> = Array(size) { this[it].copyOf() }
 
-    private fun pushHistory(userValues: Array<IntArray>) {
-        moveHistory.addLast(userValues.deepCopy())
+    @Suppress("UNCHECKED_CAST")
+    private fun Array<Array<Set<Int>>>.deepCopyNotes(): Array<Array<Set<Int>>> =
+        Array(size) { Array(this[it].size) { c -> this[it][c].toSet() } }
+
+    private fun pushSnapshot(current: PuzzleUiState) {
+        moveHistory.addLast(Snapshot(
+            userValues = current.userValues.deepCopy(),
+            notesValues = current.notesValues.deepCopyNotes()
+        ))
         if (moveHistory.size > maxHistory) moveHistory.removeFirst()
     }
 
+    private fun pushHistory(userValues: Array<IntArray>) {
+        val current = _uiState.value ?: return
+        pushSnapshot(current)
+    }
+
     /**
-     * Undo the last cell change. Restores the previous userValues from history.
+     * Undo the last cell change. Restores the previous userValues and notesValues from history.
      * No-op if history is empty.
      */
     fun undo() {
         if (moveHistory.isEmpty()) return
         val current = _uiState.value ?: return
-        val previousValues = moveHistory.removeLast()
+        val snapshot = moveHistory.removeLast()
         val newState = buildState(
             puzzle = current.puzzle,
-            userValues = previousValues,
+            userValues = snapshot.userValues,
             selectedCell = current.selectedCell,
             elapsedSeconds = current.elapsedSeconds
-        )
+        ).copy(notesValues = snapshot.notesValues, isNotesMode = _isNotesMode)
         _uiState.value = newState
         handleCompletionChange(newState)
     }
@@ -201,8 +261,10 @@ class PuzzleViewModel(
     fun loadPuzzle(puzzle: Puzzle, date: LocalDate? = null) {
         val n = puzzle.size
         val userValues = Array(n) { IntArray(n) { 0 } }
+        val emptyNotes = emptyNotesGrid(n)
         puzzleDate = date
         moveHistory.clear()
+        _isNotesMode = false
         // When no date is provided (legacy / S01 usage), treat timer as already started
         // so that tickTimer() works unconditionally — preserving S01 behaviour.
         timerStarted = (date == null)
@@ -218,14 +280,13 @@ class PuzzleViewModel(
                 val key = "completion_${d.toEpochDay()}_${puzzle.difficulty.name}"
                 val saved = store.getInProgress(key)
                 if (saved != null && saved.size == n * n) {
-                    // Restore flattened values into 2D array
                     val restored = Array(n) { r -> IntArray(n) { c -> saved[r * n + c] } }
                     _uiState.value = buildState(
                         puzzle = puzzle,
                         userValues = restored,
                         selectedCell = null,
                         elapsedSeconds = 0L
-                    )
+                    ).copy(notesValues = emptyNotes)
                     return@launch
                 }
                 _uiState.value = buildState(
@@ -233,7 +294,7 @@ class PuzzleViewModel(
                     userValues = userValues,
                     selectedCell = null,
                     elapsedSeconds = 0L
-                )
+                ).copy(notesValues = emptyNotes)
             }
         } else {
             _uiState.value = buildState(
@@ -241,9 +302,12 @@ class PuzzleViewModel(
                 userValues = userValues,
                 selectedCell = null,
                 elapsedSeconds = 0L
-            )
+            ).copy(notesValues = emptyNotes)
         }
     }
+
+    private fun emptyNotesGrid(n: Int): Array<Array<Set<Int>>> =
+        Array(n) { Array(n) { emptySet<Int>() } }
 
     // -----------------------------------------------------------------------
     // Cell selection
@@ -306,7 +370,7 @@ class PuzzleViewModel(
         val current = _uiState.value ?: return
         val (row, col) = current.selectedCell ?: return
 
-        pushHistory(current.userValues)
+        pushSnapshot(current)
 
         val existingValue = current.userValues[row][col]
         val newValue = if (existingValue == number) 0 else number  // toggle
@@ -316,12 +380,18 @@ class PuzzleViewModel(
         }
         newUserValues[row][col] = newValue
 
+        // Clear notes for this cell when a real answer is entered
+        val newNotes = current.notesValues.deepCopyNotes()
+        if (newValue != 0) {
+            newNotes[row][col] = emptySet()
+        }
+
         val newState = buildState(
             puzzle = current.puzzle,
             userValues = newUserValues,
             selectedCell = current.selectedCell,
             elapsedSeconds = current.elapsedSeconds
-        )
+        ).copy(notesValues = newNotes, isNotesMode = _isNotesMode)
         _uiState.value = newState
         autoSaveInProgress(newUserValues, current.puzzle)
 
@@ -337,7 +407,7 @@ class PuzzleViewModel(
         val current = _uiState.value ?: return
         val (row, col) = current.selectedCell ?: return
 
-        pushHistory(current.userValues)
+        pushSnapshot(current)
 
         val newUserValues = Array(current.puzzle.size) { r ->
             current.userValues[r].copyOf()
@@ -349,7 +419,7 @@ class PuzzleViewModel(
             userValues = newUserValues,
             selectedCell = current.selectedCell,
             elapsedSeconds = current.elapsedSeconds
-        )
+        ).copy(notesValues = current.notesValues, isNotesMode = _isNotesMode)
         _uiState.value = newState
         autoSaveInProgress(newUserValues, current.puzzle)
 
