@@ -3,7 +3,9 @@ package org.dgeek.sumgrid.ui
 import androidx.compose.ui.graphics.Color
 import org.dgeek.sumgrid.ui.components.GridColors
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -131,5 +133,30 @@ class GridRendererTest {
         assertColorEquals(0xFF0000FFL, modified.sumRed, "modified sumRed")
         // original is unchanged
         assertColorEquals(0xFFBA1A1AL, original.sumRed, "original sumRed unchanged")
+    }
+
+    // ── T007 — Dark-mode cell tint source-scan tests ──────────────────────────
+
+    private val gridRendererSource: String by lazy {
+        java.io.File("src/main/kotlin/org/dgeek/sumgrid/ui/components/GridRenderer.kt").readText()
+    }
+
+    @Test
+    fun gridColorsFromTheme_usesSurfaceContainerHighForUserCellBg() {
+        assertTrue(
+            "gridColorsFromTheme must use surfaceContainerHigh for userCellBg",
+            gridRendererSource.contains("surfaceContainerHigh")
+        )
+    }
+
+    @Test
+    fun gridColorsFromTheme_noHardcodedHexInThemeFunction() {
+        // Verify the function body after "fun gridColorsFromTheme" has no 0xFF literals
+        val fnBody = gridRendererSource.substringAfter("fun gridColorsFromTheme")
+            .substringBefore("\n}")
+        assertFalse(
+            "gridColorsFromTheme must not contain hardcoded hex colors",
+            fnBody.contains("Color(0x")
+        )
     }
 }

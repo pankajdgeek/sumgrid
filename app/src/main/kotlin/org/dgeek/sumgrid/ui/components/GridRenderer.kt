@@ -82,7 +82,7 @@ fun gridColorsFromTheme(): GridColors {
     val cs = MaterialTheme.colorScheme
     return GridColors(
         givenCellBg    = cs.primaryContainer,
-        userCellBg     = cs.surface,
+        userCellBg     = cs.surfaceContainerHigh,
         gridLine       = cs.onSurface,
         selectedBorder = cs.secondary,
         cellText       = cs.onSurface,
