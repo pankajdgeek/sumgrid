@@ -208,7 +208,11 @@ fun HomeScreen(
 
             DifficultySelector(
                 selectedDifficulty = selectedDifficulty,
-                onDifficultySelected = { selectedDifficulty = it }
+                onDifficultySelected = { selectedDifficulty = it },
+                completedDifficulties = state.puzzleStatuses
+                    .filter { it.isCompleted }
+                    .map { it.difficulty }
+                    .toSet()
             )
 
             Spacer(modifier = Modifier.height(24.dp))
