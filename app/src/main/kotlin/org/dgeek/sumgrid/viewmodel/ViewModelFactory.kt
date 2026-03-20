@@ -20,7 +20,8 @@ class ViewModelFactory(
         return when {
             modelClass.isAssignableFrom(PuzzleViewModel::class.java) -> {
                 PuzzleViewModel(
-                    completionStore = container.completionStore
+                    completionStore = container.completionStore,
+                    streakDataSource = container.streakRepository
                 ) as T
             }
             modelClass.isAssignableFrom(OnboardingViewModel::class.java) -> {

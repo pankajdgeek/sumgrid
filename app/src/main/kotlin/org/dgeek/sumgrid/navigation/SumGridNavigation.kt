@@ -17,6 +17,8 @@ import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -24,6 +26,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import org.dgeek.sumgrid.AppContainer
 import org.dgeek.sumgrid.engine.models.Difficulty
+import androidx.compose.runtime.DisposableEffect
 import org.dgeek.sumgrid.ui.screens.HomeScreen
 import org.dgeek.sumgrid.ui.screens.OnboardingScreen
 import org.dgeek.sumgrid.ui.screens.PuzzleScreen
@@ -166,10 +169,23 @@ fun SumGridNavHost(
         }
 
         // ── Home ──────────────────────────────────────────────────────────
-        composable(Routes.HOME) {
+        composable(Routes.HOME) { backStackEntry ->
             val homeVm: HomeViewModel = viewModel(
                 factory = HomeViewModelFactory(container)
             )
+
+            // Refresh completion data whenever this destination resumes
+            // (e.g. after navigating back from the puzzle screen).
+            DisposableEffect(backStackEntry) {
+                val observer = LifecycleEventObserver { _, event ->
+                    if (event == Lifecycle.Event.ON_RESUME) {
+                        homeVm.loadHomeData()
+                    }
+                }
+                backStackEntry.lifecycle.addObserver(observer)
+                onDispose { backStackEntry.lifecycle.removeObserver(observer) }
+            }
+
             HomeScreen(
                 vm = homeVm,
                 onStartPuzzle = { difficulty ->

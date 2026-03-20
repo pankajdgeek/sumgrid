@@ -13,6 +13,7 @@ import org.dgeek.sumgrid.daily.CompletionStore
 import org.dgeek.sumgrid.engine.models.Cell
 import org.dgeek.sumgrid.engine.models.Difficulty
 import org.dgeek.sumgrid.engine.models.Puzzle
+import org.dgeek.sumgrid.streak.StreakDataSource
 import java.time.LocalDate
 
 // ---------------------------------------------------------------------------
@@ -121,6 +122,7 @@ data class PuzzleUiState(
  */
 class PuzzleViewModel(
     private val completionStore: CompletionStore? = null,
+    private val streakDataSource: StreakDataSource? = null,
     /**
      * Coroutine scope used for persistence launches.
      * In production this is [viewModelScope] (set lazily).
@@ -533,6 +535,7 @@ class PuzzleViewModel(
                 )
             )
             store.clearInProgress(key)
+            streakDataSource?.recordCompletion(date)
         }
     }
 

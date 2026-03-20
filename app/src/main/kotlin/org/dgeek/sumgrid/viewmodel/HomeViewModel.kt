@@ -90,7 +90,7 @@ class HomeViewModel(
      */
     fun loadHomeData() {
         viewModelScope.launch {
-            val today = puzzleRepository.today()
+            val today = clock()
             val statuses = Difficulty.entries.map { difficulty ->
                 val completion = puzzleRepository.getCompletionState(today, difficulty)
                 PuzzleStatus(difficulty = difficulty, completionState = completion)
