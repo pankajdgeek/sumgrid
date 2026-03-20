@@ -12,6 +12,7 @@ import org.dgeek.sumgrid.engine.UniqueSolutionValidator
 import org.dgeek.sumgrid.analytics.AnalyticsTracker
 import org.dgeek.sumgrid.analytics.NoOpAnalyticsTracker
 import org.dgeek.sumgrid.onboarding.OnboardingRepository
+import org.dgeek.sumgrid.coin.CoinRepository
 import org.dgeek.sumgrid.review.InAppReviewTrigger
 import org.dgeek.sumgrid.streak.InMemoryStreakRepository
 import org.dgeek.sumgrid.streak.StreakRepository
@@ -38,6 +39,11 @@ private val Context.onboardingDataStore: DataStore<Preferences> by preferencesDa
 /** Stores in-app review state: lifetime_completions, review_requested. */
 private val Context.reviewDataStore: DataStore<Preferences> by preferencesDataStore(
     name = "review"
+)
+
+/** Stores coin balance for practice mode rewards. */
+private val Context.coinDataStore: DataStore<Preferences> by preferencesDataStore(
+    name = "coins"
 )
 
 // ---------------------------------------------------------------------------
@@ -94,6 +100,11 @@ class AppContainer(application: SumGridApplication) {
      */
     val reviewTrigger: InAppReviewTrigger by lazy {
         InAppReviewTrigger(application, application.reviewDataStore)
+    }
+
+    /** Coin repository for practice mode rewards. */
+    val coinRepository: CoinRepository by lazy {
+        CoinRepository(application.coinDataStore)
     }
 }
 

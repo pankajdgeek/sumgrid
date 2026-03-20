@@ -10,11 +10,11 @@ import java.time.ZoneId
  * Repository that provides a deterministic daily puzzle for a given date and difficulty.
  *
  * Seed formula:
- *   seed = date.toEpochDay() * 3 + difficulty.seedOffset
+ *   seed = date.toEpochDay() * 5 + difficulty.seedOffset
  *
  * This guarantees:
  *  - Same puzzle on any device for the same calendar day + difficulty.
- *  - Three distinct puzzles per day (one per difficulty level).
+ *  - Five distinct puzzles per day (one per difficulty level).
  *
  * Completion state is persisted via [CompletionStore].
  * DataStore-backed production implementation: [DataStoreCompletionStore].
@@ -36,7 +36,7 @@ class DailyPuzzleRepository(
      * generated grid (Xorshift128 is purely arithmetic, no platform RNG).
      */
     suspend fun getPuzzleForDate(date: LocalDate, difficulty: Difficulty): Puzzle {
-        val seed = date.toEpochDay() * 3L + difficulty.seedOffset
+        val seed = date.toEpochDay() * 5L + difficulty.seedOffset
         return generator.generate(seed, difficulty)
     }
 

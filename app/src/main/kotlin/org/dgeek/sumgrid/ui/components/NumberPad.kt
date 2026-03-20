@@ -3,6 +3,7 @@ package org.dgeek.sumgrid.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,6 +26,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.dgeek.sumgrid.engine.models.Difficulty
@@ -32,7 +34,7 @@ import org.dgeek.sumgrid.engine.models.Difficulty
 /**
  * Bottom-anchored number pad for SumGrid puzzle input.
  *
- * Shows digit buttons 1 through [difficulty.maxVal] plus clear and optional undo.
+ * Adapts button size to available width instead of using fixed 48dp.
  * When maxVal >= 7, buttons split into 2 rows for comfortable touch targets.
  *
  * @param difficulty     The active puzzle difficulty (determines which numbers to show).
@@ -60,89 +62,114 @@ fun NumberPad(
     val maxVal = difficulty.maxVal
     val numbers = (1..maxVal).toList()
 
-    if (maxVal >= 7) {
-        // 2-row layout for larger grids
-        val rows = splitNumberRange(numbers)
-        Column(
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            rows.forEachIndexed { index, rowNumbers ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                        .testTag("number_pad_row_$index"),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    for (number in rowNumbers) {
-                        NumberButton(
-                            label = number.toString(),
-                            enabled = hasSelection,
-                            contentDescription = "Enter $number",
-                            onClick = { onNumberTap(number) },
-                            modifier = Modifier
-                                .weight(1f)
-                                .size(48.dp)
-                        )
-                    }
-                    // Put action buttons on the second row with visual separator
-                    if (index == rows.lastIndex) {
-                        if (onUndoTap != null) {
-                            // Visual gap separating digits from action buttons
-                            Spacer(modifier = Modifier.width(8.dp))
-                            UndoButton(
-                                enabled = canUndo,
-                                onClick = onUndoTap,
-                                modifier = Modifier.weight(1f).size(48.dp)
+    BoxWithConstraints(modifier = modifier) {
+        val horizontalPad = 16.dp  // 8dp each side
+        val availableWidth = maxWidth - horizontalPad
+
+        if (maxVal >= 7) {
+            // 2-row layout for larger grids
+            val rows = splitNumberRange(numbers)
+            // Second row has digits + possibly undo + clear
+            val secondRowCount = rows[1].size + (if (onUndoTap != null) 1 else 0) + 1
+            val maxItemsPerRow = maxOf(rows[0].size, secondRowCount)
+            val gapTotal = (maxItemsPerRow - 1).coerceAtLeast(0) * 4  // 4dp gaps
+            val buttonSize = ((availableWidth - gapTotal.dp) / maxItemsPerRow)
+                .coerceIn(32.dp, 52.dp)
+            val fontSize = (buttonSize.value * 0.38f).coerceIn(12f, 20f).sp
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                rows.forEachIndexed { index, rowNumbers ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(buttonSize + 4.dp)
+                            .testTag("number_pad_row_$index"),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        for (number in rowNumbers) {
+                            NumberButton(
+                                label = number.toString(),
+                                enabled = hasSelection,
+                                contentDescription = "Enter $number",
+                                onClick = { onNumberTap(number) },
+                                buttonSize = buttonSize,
+                                fontSize = fontSize,
+                                modifier = Modifier.weight(1f)
                             )
                         }
-                        ClearButton(
-                            enabled = hasSelection,
-                            onClick = onClearTap,
-                            modifier = Modifier.weight(1f).size(48.dp)
-                        )
+                        if (index == rows.lastIndex) {
+                            if (onUndoTap != null) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                                UndoButton(
+                                    enabled = canUndo,
+                                    onClick = onUndoTap,
+                                    buttonSize = buttonSize,
+                                    fontSize = fontSize,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            ClearButton(
+                                enabled = hasSelection,
+                                onClick = onClearTap,
+                                buttonSize = buttonSize,
+                                fontSize = fontSize,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
                 }
             }
-        }
-    } else {
-        // Single row for small grids
-        Row(
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 4.dp)
-                .height(56.dp)
-                .testTag("number_pad_row_0"),
-            horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            for (number in numbers) {
-                NumberButton(
-                    label = number.toString(),
+        } else {
+            // Single row for small grids
+            val totalItems = numbers.size + (if (onUndoTap != null) 1 else 0) + 1
+            val gapTotal = (totalItems - 1).coerceAtLeast(0) * 4
+            val buttonSize = ((availableWidth - gapTotal.dp) / totalItems)
+                .coerceIn(32.dp, 56.dp)
+            val fontSize = (buttonSize.value * 0.38f).coerceIn(12f, 20f).sp
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .height(buttonSize + 8.dp)
+                    .testTag("number_pad_row_0"),
+                horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                for (number in numbers) {
+                    NumberButton(
+                        label = number.toString(),
+                        enabled = hasSelection,
+                        contentDescription = "Enter $number",
+                        onClick = { onNumberTap(number) },
+                        buttonSize = buttonSize,
+                        fontSize = fontSize,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                if (onUndoTap != null) {
+                    UndoButton(
+                        enabled = canUndo,
+                        onClick = onUndoTap,
+                        buttonSize = buttonSize,
+                        fontSize = fontSize,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                ClearButton(
                     enabled = hasSelection,
-                    contentDescription = "Enter $number",
-                    onClick = { onNumberTap(number) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .size(48.dp)
+                    onClick = onClearTap,
+                    buttonSize = buttonSize,
+                    fontSize = fontSize,
+                    modifier = Modifier.weight(1f)
                 )
             }
-            if (onUndoTap != null) {
-                UndoButton(
-                    enabled = canUndo,
-                    onClick = onUndoTap,
-                    modifier = Modifier.weight(1f).size(48.dp)
-                )
-            }
-            ClearButton(
-                enabled = hasSelection,
-                onClick = onClearTap,
-                modifier = Modifier.weight(1f).size(48.dp)
-            )
         }
     }
 }
@@ -165,6 +192,8 @@ private fun NumberButton(
     enabled: Boolean,
     contentDescription: String,
     onClick: () -> Unit,
+    buttonSize: Dp,
+    fontSize: androidx.compose.ui.unit.TextUnit,
     modifier: Modifier = Modifier
 ) {
     val containerColor by animateColorAsState(
@@ -190,11 +219,13 @@ private fun NumberButton(
             disabledContentColor   = contentColor
         ),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-        modifier = modifier.semantics { this.contentDescription = contentDescription }
+        modifier = modifier
+            .size(buttonSize)
+            .semantics { this.contentDescription = contentDescription }
     ) {
         Text(
             text       = label,
-            fontSize   = 18.sp,
+            fontSize   = fontSize,
             fontWeight = FontWeight.Medium
         )
     }
@@ -204,6 +235,8 @@ private fun NumberButton(
 private fun ClearButton(
     enabled: Boolean,
     onClick: () -> Unit,
+    buttonSize: Dp,
+    fontSize: androidx.compose.ui.unit.TextUnit,
     modifier: Modifier = Modifier
 ) {
     val clearContentColor by animateColorAsState(
@@ -221,11 +254,13 @@ private fun ClearButton(
             disabledContentColor = clearContentColor
         ),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-        modifier = modifier.semantics { contentDescription = "Clear cell" }
+        modifier = modifier
+            .size(buttonSize)
+            .semantics { contentDescription = "Clear cell" }
     ) {
         Text(
             text       = "\u2715",
-            fontSize   = 18.sp,
+            fontSize   = fontSize,
             fontWeight = FontWeight.Medium
         )
     }
@@ -235,6 +270,8 @@ private fun ClearButton(
 private fun UndoButton(
     enabled: Boolean,
     onClick: () -> Unit,
+    buttonSize: Dp,
+    fontSize: androidx.compose.ui.unit.TextUnit,
     modifier: Modifier = Modifier
 ) {
     Button(
@@ -248,11 +285,13 @@ private fun UndoButton(
             disabledContentColor   = MaterialTheme.colorScheme.onSurfaceVariant
         ),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-        modifier = modifier.semantics { contentDescription = "Undo last move" }
+        modifier = modifier
+            .size(buttonSize)
+            .semantics { contentDescription = "Undo last move" }
     ) {
         Text(
             text       = "\u21B6",
-            fontSize   = 18.sp,
+            fontSize   = fontSize,
             fontWeight = FontWeight.Medium
         )
     }

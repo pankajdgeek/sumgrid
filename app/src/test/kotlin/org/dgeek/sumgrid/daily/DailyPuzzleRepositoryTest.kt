@@ -73,11 +73,11 @@ class DailyPuzzleRepositoryTest {
     }
 
     @Test
-    fun getPuzzleForDate_seedFormula_epochDayTimesThreePlusDifficultyOffset() = runTest {
+    fun getPuzzleForDate_seedFormula_epochDayTimesFivePlusDifficultyOffset() = runTest {
         val date = LocalDate.of(2026, 3, 14)
         val epochDay = date.toEpochDay()
         val p = repo.getPuzzleForDate(date, Difficulty.BEGINNER)
-        val expectedBaseSeed = epochDay * 3L + Difficulty.BEGINNER.seedOffset
+        val expectedBaseSeed = epochDay * 5L + Difficulty.BEGINNER.seedOffset
         // The puzzle may have been generated with an offset if generation needed retries,
         // but the seed stored should be the base seed passed to the generator.
         assertEquals(expectedBaseSeed, p.seed)
@@ -88,7 +88,7 @@ class DailyPuzzleRepositoryTest {
         val date = LocalDate.of(2026, 3, 14)
         val epochDay = date.toEpochDay()
         val p = repo.getPuzzleForDate(date, Difficulty.EASY)
-        val expectedBaseSeed = epochDay * 3L + Difficulty.EASY.seedOffset
+        val expectedBaseSeed = epochDay * 5L + Difficulty.EASY.seedOffset
         assertEquals(expectedBaseSeed, p.seed)
     }
 

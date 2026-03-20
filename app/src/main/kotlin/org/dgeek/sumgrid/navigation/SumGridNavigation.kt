@@ -36,6 +36,10 @@ import org.dgeek.sumgrid.viewmodel.PuzzleViewModel
 import org.dgeek.sumgrid.viewmodel.ViewModelFactory
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.concurrent.atomic.AtomicInteger
+
+/** Monotonic counter XOR'd with nanoTime to guarantee unique practice seeds. */
+private val practiceCounter = AtomicInteger(0)
 
 // ---------------------------------------------------------------------------
 // HomeViewModel factory
@@ -51,7 +55,8 @@ private class HomeViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return HomeViewModel(
             puzzleRepository = container.dailyPuzzleRepository,
-            streakRepository = container.streakRepository
+            streakRepository = container.streakRepository,
+            coinRepository = container.coinRepository
         ) as T
     }
 }
@@ -141,20 +146,18 @@ fun SumGridNavHost(
             val onboardingVm: OnboardingViewModel = viewModel(factory = vmFactory)
             val puzzleVm: PuzzleViewModel = viewModel(factory = vmFactory)
 
-            // Increment launch count and load the appropriate puzzle once.
+            // Load the first onboarding puzzle (one-time only per install).
             LaunchedEffect(Unit) {
                 val puzzle = onboardingVm.incrementLaunchAndGetPuzzle()
                 if (puzzle != null) {
                     puzzleVm.loadPuzzle(puzzle)
                 } else {
-                    // No puzzle available — onboarding already exhausted; go home.
+                    // Onboarding already complete — go home.
                     navController.navigate(Routes.HOME) {
                         popUpTo(Routes.ONBOARDING) { inclusive = true }
                     }
                 }
             }
-
-            val currentLaunchCount by onboardingVm.launchCount.collectAsState()
 
             OnboardingScreen(
                 onboardingViewModel = onboardingVm,
@@ -164,7 +167,7 @@ fun SumGridNavHost(
                         popUpTo(Routes.ONBOARDING) { inclusive = true }
                     }
                 },
-                isFirstLaunch = (currentLaunchCount == 1)
+                isFirstLaunch = true
             )
         }
 
@@ -241,9 +244,40 @@ fun SumGridNavHost(
             arguments = listOf(
                 navArgument("difficulty") { type = NavType.StringType }
             )
-        ) {
-            // TODO: Wire PracticeScreen once implemented (T020)
-            Text("Practice — coming soon")
+        ) { backStackEntry ->
+            val difficultyName = backStackEntry.arguments?.getString("difficulty")
+                ?: Difficulty.BEGINNER.name
+            val difficulty = runCatching {
+                Difficulty.valueOf(difficultyName)
+            }.getOrDefault(Difficulty.BEGINNER)
+
+            val puzzleVm: PuzzleViewModel = viewModel(factory = vmFactory)
+
+            // Use backStackEntry as key so a new puzzle is generated each time
+            // the composable enters the back stack (including "Play Again" re-navigation).
+            // Seed combines nanoTime with an atomic counter to guarantee uniqueness
+            // even if two puzzles are requested in the same nanosecond.
+            LaunchedEffect(backStackEntry) {
+                val seed = System.nanoTime() xor practiceCounter.incrementAndGet().toLong()
+                val puzzle = container.puzzleGenerator.generate(seed, difficulty)
+                puzzleVm.loadPracticePuzzle(puzzle)
+            }
+
+            PuzzleScreen(
+                vm = puzzleVm,
+                onBack = { navController.popBackStack() },
+                onPlayAgain = {
+                    // Navigate to a new practice puzzle at the same difficulty.
+                    // Popping the current entry and pushing a fresh one ensures
+                    // LaunchedEffect(backStackEntry) re-fires with a new entry.
+                    navController.navigate(Routes.practice(difficulty)) {
+                        popUpTo(Routes.PRACTICE) { inclusive = true }
+                    }
+                },
+                onChangeDifficulty = {
+                    navController.popBackStack()
+                }
+            )
         }
     }
 }

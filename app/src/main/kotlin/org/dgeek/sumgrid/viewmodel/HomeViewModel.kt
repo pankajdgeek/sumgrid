@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.dgeek.sumgrid.coin.CoinRepository
 import org.dgeek.sumgrid.daily.CompletionState
 import org.dgeek.sumgrid.daily.DailyPuzzleRepository
 import org.dgeek.sumgrid.engine.models.Difficulty
@@ -44,6 +45,8 @@ data class HomeUiState(
     val earnedBadges: Set<StreakBadge> = emptySet(),
     /** Whether all daily puzzles (all difficulties) are complete for today. */
     val allComplete: Boolean = false,
+    /** Total coins earned from practice mode. */
+    val totalCoins: Int = 0,
     /** Whether the home screen data has finished loading. */
     val isLoading: Boolean = true
 )
@@ -69,7 +72,8 @@ data class HomeUiState(
 class HomeViewModel(
     private val puzzleRepository: DailyPuzzleRepository,
     private val streakRepository: StreakDataSource,
-    private val clock: () -> LocalDate = { LocalDate.now(ZoneId.systemDefault()) }
+    private val clock: () -> LocalDate = { LocalDate.now(ZoneId.systemDefault()) },
+    private val coinRepository: CoinRepository? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -78,6 +82,7 @@ class HomeViewModel(
     init {
         loadHomeData()
         observeStreak()
+        observeCoins()
     }
 
     // -----------------------------------------------------------------------
@@ -118,6 +123,19 @@ class HomeViewModel(
                     currentStreak = state.currentStreak,
                     earnedBadges = state.earnedBadges
                 )
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Coin observation
+    // -----------------------------------------------------------------------
+
+    private fun observeCoins() {
+        val repo = coinRepository ?: return
+        viewModelScope.launch {
+            repo.totalCoins.collect { coins ->
+                _uiState.value = _uiState.value.copy(totalCoins = coins)
             }
         }
     }

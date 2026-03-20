@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import org.dgeek.sumgrid.coin.CoinRepository
 import org.dgeek.sumgrid.daily.CompletionStore
 import org.dgeek.sumgrid.engine.models.Cell
 import org.dgeek.sumgrid.engine.models.Difficulty
@@ -129,7 +130,8 @@ class PuzzleViewModel(
      * In unit tests pass a [TestScope] or [CoroutineScope(Dispatchers.Unconfined)] to avoid
      * requiring an Android main Looper.
      */
-    private val persistScope: CoroutineScope? = null
+    private val persistScope: CoroutineScope? = null,
+    private val coinRepository: CoinRepository? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<PuzzleUiState?>(null)
@@ -238,6 +240,14 @@ class PuzzleViewModel(
     /** The [LocalDate] for which the current puzzle was loaded (for DataStore key). */
     private var puzzleDate: LocalDate? = null
 
+    /** True when the current puzzle is a practice mode puzzle. */
+    private var _isPracticeMode = false
+    val isPracticeMode: Boolean get() = _isPracticeMode
+
+    /** Coins earned on the most recent practice completion (reset on new puzzle load). */
+    private val _coinsEarned = MutableStateFlow(0)
+    val coinsEarned: StateFlow<Int> = _coinsEarned.asStateFlow()
+
     // -----------------------------------------------------------------------
     // Timer state
     // -----------------------------------------------------------------------
@@ -267,11 +277,15 @@ class PuzzleViewModel(
         puzzleDate = date
         moveHistory.clear()
         _isNotesMode = false
-        // When no date is provided (legacy / S01 usage), treat timer as already started
+        // When no date is provided (legacy / S01 usage / practice), treat timer as already started
         // so that tickTimer() works unconditionally — preserving S01 behaviour.
         timerStarted = (date == null)
         completionPersisted = false
         _isComplete.value = false
+        if (date != null) {
+            _isPracticeMode = false
+            _coinsEarned.value = 0
+        }
 
         // Attempt to restore in-progress state
         val store = completionStore
@@ -306,6 +320,16 @@ class PuzzleViewModel(
                 elapsedSeconds = 0L
             ).copy(notesValues = emptyNotes)
         }
+    }
+
+    /**
+     * Load a practice puzzle. No date-based persistence, no streak tracking.
+     * Coins are awarded on completion.
+     */
+    fun loadPracticePuzzle(puzzle: Puzzle) {
+        _isPracticeMode = true
+        _coinsEarned.value = 0
+        loadPuzzle(puzzle, date = null)
     }
 
     private fun emptyNotesGrid(n: Int): Array<Array<Set<Int>>> =
@@ -504,8 +528,20 @@ class PuzzleViewModel(
         // Persist exactly once — when puzzle transitions from incomplete to complete
         if (!wasComplete && nowComplete && !completionPersisted) {
             completionPersisted = true
-            persistCompletion(newState)
+            if (_isPracticeMode) {
+                awardCoins(newState)
+            } else {
+                persistCompletion(newState)
+            }
         }
+    }
+
+    private fun awardCoins(state: PuzzleUiState) {
+        val repo = coinRepository ?: return
+        val reward = state.puzzle.difficulty.coinReward
+        _coinsEarned.value = reward
+        val scope = persistScope ?: viewModelScope
+        scope.launch { repo.addCoins(reward) }
     }
 
     /**

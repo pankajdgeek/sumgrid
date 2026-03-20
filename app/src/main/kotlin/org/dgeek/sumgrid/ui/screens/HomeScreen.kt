@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.animation.core.RepeatMode
@@ -107,7 +108,8 @@ fun HomeScreen(
             return@Scaffold
         }
 
-        Column(
+        // Center content and cap width on wide screens (landscape/tablet)
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
@@ -118,7 +120,13 @@ fun HomeScreen(
                         )
                     )
                 )
-                .padding(innerPadding)
+                .padding(innerPadding),
+            contentAlignment = Alignment.TopCenter
+        ) {
+        Column(
+            modifier = Modifier
+                .widthIn(max = 480.dp)
+                .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -274,8 +282,18 @@ fun HomeScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ── Practice Mode ──────────────────────────────────────────────
+            PracticeModeSection(
+                totalCoins = state.totalCoins,
+                selectedDifficulty = selectedDifficulty,
+                onStartPractice = onStartPractice
+            )
+
             Spacer(modifier = Modifier.height(24.dp))
         }
+        } // Box
     }
 }
 
@@ -485,6 +503,72 @@ private fun BadgeItem(
             )
         }
         // displayName text label intentionally removed — emoji-only display per S2A-F002
+    }
+}
+
+@Composable
+private fun PracticeModeSection(
+    totalCoins: Int,
+    selectedDifficulty: Difficulty?,
+    onStartPractice: (Difficulty) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        shape = MaterialTheme.shapes.medium,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Practice Mode",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "\uD83E\uDE99 $totalCoins",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.tertiary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Unlimited random puzzles. Earn coins!",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = { selectedDifficulty?.let { onStartPractice(it) } },
+                enabled = selectedDifficulty != null,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                val reward = selectedDifficulty?.coinReward ?: 0
+                Text(
+                    text = "Practice (+$reward coins)",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
     }
 }
 
