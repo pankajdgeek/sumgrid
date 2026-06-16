@@ -41,8 +41,8 @@ class InAppReviewTrigger(
         val REVIEW_REQUESTED = booleanPreferencesKey("review_requested")
         val LIFETIME_COMPLETIONS = intPreferencesKey("lifetime_completions")
         val PRACTICE_COMPLETIONS = intPreferencesKey("practice_completions")
-        const val DAILY_THRESHOLD = 3
-        const val PRACTICE_THRESHOLD = 3
+        const val DAILY_THRESHOLD = 1
+        const val PRACTICE_THRESHOLD = 1
     }
 
     suspend fun recordDailyCompletion() {
