@@ -94,9 +94,11 @@ class AppContainer(application: SumGridApplication) {
     }
 
     /**
-     * In-app review trigger. Tracks lifetime puzzle completions and requests the
-     * Play Store review dialog once the user has completed [InAppReviewTrigger.REVIEW_THRESHOLD]
-     * puzzles. The request is made at most once per install.
+     * In-app review trigger. Tracks daily and practice completions, exposes
+     * eligibility checks for streak milestones, and launches the Play Store
+     * review flow at most once per install via [InAppReviewTrigger.requestReviewIfEligible].
+     * A manual path ([InAppReviewTrigger.launchManualReview]) is unconditional and
+     * used by the Settings "Rate SumGrid" entry.
      */
     val reviewTrigger: InAppReviewTrigger by lazy {
         InAppReviewTrigger(application, application.reviewDataStore)

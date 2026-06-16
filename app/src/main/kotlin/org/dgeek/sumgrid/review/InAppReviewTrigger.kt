@@ -1,7 +1,10 @@
 package org.dgeek.sumgrid.review
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -10,16 +13,22 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import com.google.android.play.core.review.ReviewManagerFactory
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
+import org.dgeek.sumgrid.streak.StreakBadge
 
 /**
- * Triggers the Play Store in-app review flow after the user has completed
- * [REVIEW_THRESHOLD] puzzles for the first time.
+ * Triggers the Play Store in-app review flow.
  *
- * Rules:
- * - Increments a lifetime completion counter on each call to [recordCompletion].
- * - Requests the review dialog once the counter reaches [REVIEW_THRESHOLD].
- * - Never requests again (flag persisted to DataStore).
- * - Wraps all Play-API calls in try-catch so sideloaded / emulator builds never crash.
+ * Three automatic trigger paths share a single per-install budget — once any
+ * one fires, the [REVIEW_REQUESTED] flag is set and no further automatic
+ * prompts are shown:
+ *  - Daily puzzle: lifetime completions reach [DAILY_THRESHOLD].
+ *  - Practice puzzle: lifetime practice completions reach [PRACTICE_THRESHOLD].
+ *  - Streak milestone: current streak hits any [StreakBadge.requiredDays] value.
+ *
+ * A fourth manual path ([launchManualReview]) is unconditional — it never
+ * checks or sets the budget flag, so a user can always re-rate from Settings.
+ * If the Play in-app flow is unavailable (sideload, no Play services, quota
+ * exhausted), it falls back to opening the Play Store listing via Intent.
  */
 class InAppReviewTrigger(
     private val context: Context,
@@ -29,47 +38,55 @@ class InAppReviewTrigger(
     companion object {
         val REVIEW_REQUESTED = booleanPreferencesKey("review_requested")
         val LIFETIME_COMPLETIONS = intPreferencesKey("lifetime_completions")
-        const val REVIEW_THRESHOLD = 3
+        val PRACTICE_COMPLETIONS = intPreferencesKey("practice_completions")
+        const val DAILY_THRESHOLD = 3
+        const val PRACTICE_THRESHOLD = 3
     }
 
-    /**
-     * Increment the lifetime puzzle completion counter.
-     * Called from PuzzleViewModel on each puzzle completion.
-     */
-    suspend fun recordCompletion() {
+    suspend fun recordDailyCompletion() {
         dataStore.edit { prefs ->
             val current = prefs[LIFETIME_COMPLETIONS] ?: 0
             prefs[LIFETIME_COMPLETIONS] = current + 1
         }
     }
 
-    /**
-     * Get current lifetime completion count.
-     */
-    suspend fun getLifetimeCompletions(): Int {
-        return dataStore.data.first()[LIFETIME_COMPLETIONS] ?: 0
+    suspend fun recordPracticeCompletion() {
+        dataStore.edit { prefs ->
+            val current = prefs[PRACTICE_COMPLETIONS] ?: 0
+            prefs[PRACTICE_COMPLETIONS] = current + 1
+        }
+    }
+
+    suspend fun getLifetimeCompletions(): Int =
+        dataStore.data.first()[LIFETIME_COMPLETIONS] ?: 0
+
+    suspend fun getPracticeCompletions(): Int =
+        dataStore.data.first()[PRACTICE_COMPLETIONS] ?: 0
+
+    suspend fun isReviewRequested(): Boolean =
+        dataStore.data.first()[REVIEW_REQUESTED] ?: false
+
+    suspend fun isEligibleAfterDaily(): Boolean =
+        !isReviewRequested() && getLifetimeCompletions() >= DAILY_THRESHOLD
+
+    suspend fun isEligibleAfterPractice(): Boolean =
+        !isReviewRequested() && getPracticeCompletions() >= PRACTICE_THRESHOLD
+
+    suspend fun isEligibleAfterStreak(currentStreak: Int): Boolean {
+        if (isReviewRequested()) return false
+        return StreakBadge.entries.any { it.requiredDays == currentStreak }
     }
 
     /**
-     * Check if the review has already been requested.
-     */
-    suspend fun isReviewRequested(): Boolean {
-        return dataStore.data.first()[REVIEW_REQUESTED] ?: false
-    }
-
-    /**
-     * Request an in-app review if eligible:
-     * - lifetime completions >= [REVIEW_THRESHOLD]
-     * - review not yet requested
+     * Automatic path. If the per-install budget is not yet spent and at least
+     * one eligibility check holds (daily / practice / streak — caller is
+     * expected to verify before invoking), launch the in-app review flow.
      *
-     * @param activity The current Activity for launching the review flow.
+     * Flips [REVIEW_REQUESTED] *before* the Play call so a transient failure
+     * never causes a re-prompt on the next eligible event.
      */
     suspend fun requestReviewIfEligible(activity: Activity) {
-        val completions = getLifetimeCompletions()
-        if (completions < REVIEW_THRESHOLD) return
         if (isReviewRequested()) return
-
-        // Mark as requested before attempting — prevents retry storms even on failure.
         dataStore.edit { prefs -> prefs[REVIEW_REQUESTED] = true }
 
         try {
@@ -78,6 +95,42 @@ class InAppReviewTrigger(
             manager.launchReviewFlow(activity, reviewInfo).await()
         } catch (_: Exception) {
             // Play Store unavailable (emulator, sideloaded APK, no network) — ignore.
+        }
+    }
+
+    /**
+     * Manual path. Always attempts the Play in-app review flow regardless of
+     * [REVIEW_REQUESTED] state, and falls back to opening the Play Store
+     * listing if the in-app flow is unavailable. Does not modify the budget
+     * flag — users can re-tap "Rate" without preempting automatic prompts
+     * that haven't fired yet.
+     */
+    suspend fun launchManualReview(activity: Activity) {
+        try {
+            val manager = ReviewManagerFactory.create(context)
+            val reviewInfo = manager.requestReviewFlow().await()
+            manager.launchReviewFlow(activity, reviewInfo).await()
+        } catch (_: Exception) {
+            openPlayStoreListing(activity)
+        }
+    }
+
+    private fun openPlayStoreListing(activity: Activity) {
+        val pkg = context.packageName
+        val marketIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$pkg"))
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            activity.startActivity(marketIntent)
+        } catch (_: ActivityNotFoundException) {
+            val webIntent = Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("https://play.google.com/store/apps/details?id=$pkg"),
+            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            try {
+                activity.startActivity(webIntent)
+            } catch (_: ActivityNotFoundException) {
+                // No browser, no Play Store — give up silently.
+            }
         }
     }
 }
