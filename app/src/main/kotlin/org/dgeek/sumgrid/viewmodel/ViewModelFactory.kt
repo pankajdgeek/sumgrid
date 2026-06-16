@@ -22,7 +22,8 @@ class ViewModelFactory(
                 PuzzleViewModel(
                     completionStore = container.completionStore,
                     streakDataSource = container.streakRepository,
-                    coinRepository = container.coinRepository
+                    coinRepository = container.coinRepository,
+                    reviewTrigger = container.reviewTrigger,
                 ) as T
             }
             modelClass.isAssignableFrom(OnboardingViewModel::class.java) -> {

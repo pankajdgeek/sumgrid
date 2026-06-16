@@ -5,15 +5,20 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import org.dgeek.sumgrid.coin.CoinRepository
 import org.dgeek.sumgrid.daily.CompletionStore
 import org.dgeek.sumgrid.engine.models.Cell
 import org.dgeek.sumgrid.engine.models.Difficulty
 import org.dgeek.sumgrid.engine.models.Puzzle
+import org.dgeek.sumgrid.review.InAppReviewTrigger
 import org.dgeek.sumgrid.streak.StreakDataSource
 import java.time.LocalDate
 
@@ -131,11 +136,22 @@ class PuzzleViewModel(
      * requiring an Android main Looper.
      */
     private val persistScope: CoroutineScope? = null,
-    private val coinRepository: CoinRepository? = null
+    private val coinRepository: CoinRepository? = null,
+    private val reviewTrigger: InAppReviewTrigger? = null,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<PuzzleUiState?>(null)
     val uiState: StateFlow<PuzzleUiState?> = _uiState.asStateFlow()
+
+    /**
+     * One-shot signal asking the UI layer to launch the Play in-app review flow.
+     * Emitted after a daily/practice completion when [reviewTrigger] confirms
+     * one of the eligibility conditions holds. The composable consumes this and
+     * calls [InAppReviewTrigger.requestReviewIfEligible] with an Activity — the
+     * ViewModel intentionally doesn't hold one.
+     */
+    private val _requestReviewEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val requestReviewEvent: SharedFlow<Unit> = _requestReviewEvent.asSharedFlow()
 
     // -----------------------------------------------------------------------
     // Notes mode
@@ -541,7 +557,15 @@ class PuzzleViewModel(
         val reward = state.puzzle.difficulty.coinReward
         _coinsEarned.value = reward
         val scope = persistScope ?: viewModelScope
-        scope.launch { repo.addCoins(reward) }
+        scope.launch {
+            repo.addCoins(reward)
+            reviewTrigger?.let { trigger ->
+                trigger.recordPracticeCompletion()
+                if (trigger.isEligibleAfterPractice()) {
+                    _requestReviewEvent.tryEmit(Unit)
+                }
+            }
+        }
     }
 
     /**
@@ -572,6 +596,14 @@ class PuzzleViewModel(
             )
             store.clearInProgress(key)
             streakDataSource?.recordCompletion(date)
+
+            reviewTrigger?.let { trigger ->
+                trigger.recordDailyCompletion()
+                val streakAfter = streakDataSource?.streakState?.first()?.currentStreak ?: 0
+                if (trigger.isEligibleAfterDaily() || trigger.isEligibleAfterStreak(streakAfter)) {
+                    _requestReviewEvent.tryEmit(Unit)
+                }
+            }
         }
     }
 

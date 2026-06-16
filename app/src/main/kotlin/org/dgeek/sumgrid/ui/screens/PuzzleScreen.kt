@@ -51,12 +51,14 @@ import kotlinx.coroutines.delay
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.zIndex
+import org.dgeek.sumgrid.review.InAppReviewTrigger
 import org.dgeek.sumgrid.share.ShareCardGenerator
 import org.dgeek.sumgrid.share.shareResult
 import org.dgeek.sumgrid.ui.components.CelebrationCellWrapper
 import org.dgeek.sumgrid.ui.components.GridRenderer
 import org.dgeek.sumgrid.ui.components.NumberPad
 import org.dgeek.sumgrid.ui.components.rememberCelebrationState
+import org.dgeek.sumgrid.ui.util.findActivity
 import org.dgeek.sumgrid.viewmodel.PuzzleUiState
 import org.dgeek.sumgrid.viewmodel.PuzzleViewModel
 
@@ -81,6 +83,7 @@ fun PuzzleScreen(
     puzzleDate: java.time.LocalDate? = null,
     onPlayAgain: (() -> Unit)? = null,
     onChangeDifficulty: (() -> Unit)? = null,
+    reviewTrigger: InAppReviewTrigger? = null,
     modifier: Modifier = Modifier
 ) {
     val state by vm.uiState.collectAsState()
@@ -92,6 +95,18 @@ fun PuzzleScreen(
     LaunchedEffect(state?.isCompleted) {
         if (state?.isCompleted == true) {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        }
+    }
+
+    // Forward review-request events from the VM to the Play in-app review flow.
+    // The VM emits when a daily/practice/streak eligibility check passes; we
+    // hand it the Activity it can't hold itself.
+    LaunchedEffect(reviewTrigger) {
+        val trigger = reviewTrigger ?: return@LaunchedEffect
+        vm.requestReviewEvent.collect {
+            context.findActivity()?.let { activity ->
+                trigger.requestReviewIfEligible(activity)
+            }
         }
     }
 

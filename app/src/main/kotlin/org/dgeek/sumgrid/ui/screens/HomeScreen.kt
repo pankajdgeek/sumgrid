@@ -23,10 +23,13 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -49,10 +52,12 @@ import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
+import org.dgeek.sumgrid.R
 import org.dgeek.sumgrid.engine.models.Difficulty
 import org.dgeek.sumgrid.streak.StreakBadge
 import org.dgeek.sumgrid.ui.components.BadgeDetailBottomSheet
@@ -81,6 +86,7 @@ fun HomeScreen(
     onStartPuzzle: (Difficulty) -> Unit,
     onOpenStats: () -> Unit = {},
     onStartPractice: (Difficulty) -> Unit = {},
+    onOpenSettings: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val state by vm.uiState.collectAsState()
@@ -292,6 +298,21 @@ fun HomeScreen(
             )
 
             Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        // Settings gear — declared last so it sits on top of the Column for
+        // hit-testing (Compose draws Box children in source order).
+        IconButton(
+            onClick = onOpenSettings,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 8.dp, end = 8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Settings,
+                contentDescription = stringResource(R.string.home_open_settings_cd),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         } // Box
     }

@@ -30,6 +30,7 @@ import androidx.compose.runtime.DisposableEffect
 import org.dgeek.sumgrid.ui.screens.HomeScreen
 import org.dgeek.sumgrid.ui.screens.OnboardingScreen
 import org.dgeek.sumgrid.ui.screens.PuzzleScreen
+import org.dgeek.sumgrid.ui.screens.SettingsScreen
 import org.dgeek.sumgrid.viewmodel.HomeViewModel
 import org.dgeek.sumgrid.viewmodel.OnboardingViewModel
 import org.dgeek.sumgrid.viewmodel.PuzzleViewModel
@@ -73,6 +74,8 @@ private object Routes {
     const val STATS = "stats"
     /** Practice mode with a chosen difficulty. */
     const val PRACTICE = "practice/{difficulty}"
+    /** Settings screen — currently houses the manual "Rate SumGrid" entry. */
+    const val SETTINGS = "settings"
 
     fun puzzle(difficulty: Difficulty): String = "puzzle/${difficulty.name}"
     fun practice(difficulty: Difficulty): String = "practice/${difficulty.name}"
@@ -199,7 +202,18 @@ fun SumGridNavHost(
                 },
                 onStartPractice = { difficulty ->
                     navController.navigate(Routes.practice(difficulty))
-                }
+                },
+                onOpenSettings = {
+                    navController.navigate(Routes.SETTINGS)
+                },
+            )
+        }
+
+        // ── Settings ────────────────────────────────────────────────────
+        composable(Routes.SETTINGS) {
+            SettingsScreen(
+                reviewTrigger = container.reviewTrigger,
+                onBack = { navController.popBackStack() },
             )
         }
 
@@ -228,7 +242,8 @@ fun SumGridNavHost(
             PuzzleScreen(
                 vm = puzzleVm,
                 onBack = { navController.popBackStack() },
-                puzzleDate = LocalDate.now(ZoneId.systemDefault())
+                puzzleDate = LocalDate.now(ZoneId.systemDefault()),
+                reviewTrigger = container.reviewTrigger,
             )
         }
 
@@ -276,7 +291,8 @@ fun SumGridNavHost(
                 },
                 onChangeDifficulty = {
                     navController.popBackStack()
-                }
+                },
+                reviewTrigger = container.reviewTrigger,
             )
         }
     }

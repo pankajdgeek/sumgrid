@@ -5,6 +5,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -36,6 +37,7 @@ class InAppReviewTrigger(
 ) {
 
     companion object {
+        private const val TAG = "InAppReview"
         val REVIEW_REQUESTED = booleanPreferencesKey("review_requested")
         val LIFETIME_COMPLETIONS = intPreferencesKey("lifetime_completions")
         val PRACTICE_COMPLETIONS = intPreferencesKey("practice_completions")
@@ -47,6 +49,7 @@ class InAppReviewTrigger(
         dataStore.edit { prefs ->
             val current = prefs[LIFETIME_COMPLETIONS] ?: 0
             prefs[LIFETIME_COMPLETIONS] = current + 1
+            Log.d(TAG, "recordDailyCompletion: lifetime=${current + 1}")
         }
     }
 
@@ -54,6 +57,7 @@ class InAppReviewTrigger(
         dataStore.edit { prefs ->
             val current = prefs[PRACTICE_COMPLETIONS] ?: 0
             prefs[PRACTICE_COMPLETIONS] = current + 1
+            Log.d(TAG, "recordPracticeCompletion: practice=${current + 1}")
         }
     }
 
@@ -86,15 +90,21 @@ class InAppReviewTrigger(
      * never causes a re-prompt on the next eligible event.
      */
     suspend fun requestReviewIfEligible(activity: Activity) {
-        if (isReviewRequested()) return
+        if (isReviewRequested()) {
+            Log.d(TAG, "requestReviewIfEligible: skipped — budget already spent")
+            return
+        }
+        Log.d(TAG, "requestReviewIfEligible: spending budget and launching Play review flow")
         dataStore.edit { prefs -> prefs[REVIEW_REQUESTED] = true }
 
         try {
             val manager = ReviewManagerFactory.create(context)
             val reviewInfo = manager.requestReviewFlow().await()
             manager.launchReviewFlow(activity, reviewInfo).await()
-        } catch (_: Exception) {
+            Log.d(TAG, "requestReviewIfEligible: launchReviewFlow returned (may be no-op on dev builds)")
+        } catch (e: Exception) {
             // Play Store unavailable (emulator, sideloaded APK, no network) — ignore.
+            Log.d(TAG, "requestReviewIfEligible: Play API unavailable (${e.javaClass.simpleName}: ${e.message})")
         }
     }
 
@@ -106,11 +116,14 @@ class InAppReviewTrigger(
      * that haven't fired yet.
      */
     suspend fun launchManualReview(activity: Activity) {
+        Log.d(TAG, "launchManualReview: trying Play in-app review flow")
         try {
             val manager = ReviewManagerFactory.create(context)
             val reviewInfo = manager.requestReviewFlow().await()
             manager.launchReviewFlow(activity, reviewInfo).await()
-        } catch (_: Exception) {
+            Log.d(TAG, "launchManualReview: launchReviewFlow returned")
+        } catch (e: Exception) {
+            Log.d(TAG, "launchManualReview: Play API failed (${e.javaClass.simpleName}: ${e.message}) — opening Play Store listing")
             openPlayStoreListing(activity)
         }
     }
@@ -121,6 +134,7 @@ class InAppReviewTrigger(
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         try {
             activity.startActivity(marketIntent)
+            Log.d(TAG, "openPlayStoreListing: market:// intent launched for $pkg")
         } catch (_: ActivityNotFoundException) {
             val webIntent = Intent(
                 Intent.ACTION_VIEW,
@@ -128,8 +142,9 @@ class InAppReviewTrigger(
             ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             try {
                 activity.startActivity(webIntent)
+                Log.d(TAG, "openPlayStoreListing: https fallback launched for $pkg")
             } catch (_: ActivityNotFoundException) {
-                // No browser, no Play Store — give up silently.
+                Log.w(TAG, "openPlayStoreListing: no Play Store and no browser available")
             }
         }
     }
